@@ -1,4 +1,34 @@
-node_modules
-dist
-.env.local
+# Environment variables
+.env
+.env.*
+!.env.example
+
+frontend/.env
+backend/.env
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Python
+backend/.venv/
+backend/__pycache__/
+**/__pycache__/
+backend/.pytest_cache/
+backend/.ruff_cache/
+*.pyc
+
+# Lambda build artifacts
+backend/build/
+backend/future-you-backend.zip
+
+# macOS
 .DS_Store
+
+# VS Code / IDE
+.vscode/
+.idea/
+
+# AWS
+.aws-sam/
+samconfig.toml
