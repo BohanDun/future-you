@@ -311,13 +311,8 @@ assumptions, and the verified demo outcomes.
 | Frontend | Person 1 | Calls `POST /simulate` via `frontend/src/lib/api.ts` |
 | Financial tools | Person 2 | `backend/app/financial/` + `backend/data/` |
 | Backend / AWS | Person 3 | `backend/app/main.py`, Lambda, API Gateway |
-| AI agent | Bohan Dun (Person 4) | `agent/` imported in `backend/app/main.py` |
+| AI agent | Person 4 | `agent/` imported in `backend/app/main.py` |
 
 When deploying Lambda, include both `backend/app/` and the top-level `agent/`
 package in the deployment artifact, with the repo root on `PYTHONPATH`.
 
-## Contributors
-
-- **Bohan Dun** ([@BohanDun](https://github.com/BohanDun)) — AI agent module
-  (`agent/`), Bedrock integration, coach mode, enrichment, tests, and README
-  setup docs
