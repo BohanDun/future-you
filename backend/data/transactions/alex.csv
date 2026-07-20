@@ -1,0 +1,20 @@
+transactionId,customerId,date,description,category,amount,direction
+txn-001,alex,2026-04-05,Cafe and lunch,dining,120,expense
+txn-002,alex,2026-04-14,Restaurant,dining,95,expense
+txn-003,alex,2026-04-25,Takeaway,dining,95,expense
+txn-004,alex,2026-05-04,Cafe and lunch,dining,110,expense
+txn-005,alex,2026-05-16,Restaurant,dining,126,expense
+txn-006,alex,2026-05-28,Takeaway,dining,120,expense
+txn-007,alex,2026-06-01,Monthly salary,income,5200,income
+txn-008,alex,2026-06-02,Rent,housing,1800,expense
+txn-009,alex,2026-06-05,Cafe and lunch,dining,140,expense
+txn-010,alex,2026-06-16,Restaurant,dining,135,expense
+txn-011,alex,2026-06-27,Takeaway,dining,145,expense
+txn-012,alex,2026-06-07,Petrol,transport,200,expense
+txn-013,alex,2026-06-21,Public transport,transport,180,expense
+txn-014,alex,2026-06-08,Groceries,groceries,280,expense
+txn-015,alex,2026-06-22,Groceries,groceries,280,expense
+txn-016,alex,2026-06-09,Phone and streaming,subscriptions,50,expense
+txn-017,alex,2026-06-24,Cloud and software,subscriptions,40,expense
+txn-018,alex,2026-06-12,Personal expenses,other,300,expense
+txn-019,alex,2026-06-26,Household expenses,other,300,expense

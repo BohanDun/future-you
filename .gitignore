@@ -1,0 +1,35 @@
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Python
+.venv/
+backend/.venv/
+backend/__pycache__/
+**/__pycache__/
+backend/.pytest_cache/
+backend/.ruff_cache/
+.coverage
+*.egg-info/
+*.pyc
+
+# Lambda build artifacts
+backend/build/
+backend/future-you-backend.zip
+
+# macOS
+.DS_Store
+
+# VS Code / IDE
+.vscode/
+.idea/
+
+# AWS
+.aws-sam/
+samconfig.toml
