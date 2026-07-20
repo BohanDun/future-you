@@ -41,7 +41,7 @@ export function AgentSection() {
         prev.map((m) => (m.id === pendingMsg.id ? { ...m, text: response.explanation, pending: false } : m)),
       );
       setResult(response.simulation);
-    } catch (err) {
+    } catch {
       setMessages((prev) =>
         prev.map((m) =>
           m.id === pendingMsg.id

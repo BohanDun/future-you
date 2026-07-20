@@ -36,10 +36,12 @@ future-you/
 
 ```bash
 cd backend
-python3 -m venv .venv
-source .venv/bin/activate
+python -m venv .venv
+# Windows PowerShell: .\.venv\Scripts\Activate.ps1
+# macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env
+# Windows PowerShell: Copy-Item .env.example .env
+# macOS/Linux: cp .env.example .env
 uvicorn app.main:app --reload
 ```
 
@@ -60,7 +62,8 @@ In a second terminal:
 ```bash
 cd frontend
 npm install
-cp .env.example .env.local
+# Windows PowerShell: Copy-Item .env.example .env.local
+# macOS/Linux: cp .env.example .env.local
 npm run dev
 ```
 
@@ -87,13 +90,24 @@ Example request:
 
 ```bash
 cd frontend
+npm run lint
 npm run build
 
 cd ../backend
-source .venv/bin/activate
+python -m ruff check .
 python -m pytest
 ```
 
 Frontend production files are generated in `frontend/dist/`. Backend Lambda
 artifacts under `backend/build/` and `backend/future-you-backend.zip` are not
 committed.
+
+## Person 2 financial engine
+
+The deterministic financial engine is in `backend/app/financial/`. Synthetic
+customer and transaction data live in `backend/data/`. The engine calculates
+all money and goal outcomes before Bedrock receives the result, so the AI does
+not invent financial figures.
+
+See `backend/app/financial/README.md` for formulas, risk thresholds, allocation
+assumptions, and the verified demo outcomes.

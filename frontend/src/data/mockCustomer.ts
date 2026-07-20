@@ -19,6 +19,7 @@ export interface CustomerProfile {
   goals: Goal[];
   diningSpend: { month: string; amount: number }[];
   spendingCategories: { category: string; amount: number }[];
+  insights: string[];
 }
 
 export const mockCustomer: CustomerProfile = {
@@ -45,19 +46,25 @@ export const mockCustomer: CustomerProfile = {
     { category: 'Subscriptions', amount: 90 },
     { category: 'Other', amount: 600 },
   ],
+  insights: [
+    'Your dining spending increased by approximately 18% from May to June.',
+    'Housing is your largest monthly spending category at $1,800.00.',
+    'You are saving approximately 26% of monthly income.',
+  ],
 };
 
-export function diningInsight(): string {
-  const spend = mockCustomer.diningSpend;
-  const first = spend[0].amount;
-  const last = spend[spend.length - 1].amount;
-  const pct = Math.round(((last - first) / first) * 100);
-  return `Your dining spending ${pct >= 0 ? 'increased' : 'decreased'} by approximately ${Math.abs(pct)}% since ${spend[0].month}.`;
+export function diningInsight(profile: CustomerProfile = mockCustomer): string {
+  const spend = profile.diningSpend;
+  if (spend.length < 2) return 'More spending history is needed to show a trend.';
+  const previous = spend[spend.length - 2];
+  const latest = spend[spend.length - 1];
+  const pct = Math.round(((latest.amount - previous.amount) / previous.amount) * 100);
+  return `Your dining spending ${pct >= 0 ? 'increased' : 'decreased'} by approximately ${Math.abs(pct)}% from ${previous.month} to ${latest.month}.`;
 }
 
 export const suggestedQuestions = [
   'What happens if I buy a $2,000 laptop?',
-  'Can I afford a trip to Japan next year?',
+  'Can I afford a $3,000 trip to Japan next year?',
   'What if I save an extra $50 per week?',
   'What if my rent increases by $100 per week?',
 ];

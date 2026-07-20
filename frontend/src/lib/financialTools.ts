@@ -1,10 +1,5 @@
-// Financial calculation tools — TypeScript port of spec section 8.
-//
-// IMPORTANT: this file exists so the frontend can demo end-to-end before
-// Person 3's backend and Person 2's Python tools are live. Once the real
-// API is ready, src/lib/api.ts should call it instead and this file can be
-// deleted or kept only for local/offline dev. The math here intentionally
-// mirrors the spec exactly so behaviour matches the real backend.
+// Offline fallback mirroring the deterministic Python engine.
+// Production and integrated local demos should call the backend API instead.
 
 import type { CustomerProfile, Goal } from '../data/mockCustomer';
 
@@ -38,151 +33,214 @@ export interface SimulationResult {
   goals: GoalOutcome[];
   riskBefore: RiskLevel;
   riskAfter: RiskLevel;
+  riskReasons: string[];
   recommendation: string;
   scenario: ParsedScenario;
 }
 
-// 8.2 Goal Completion Tool
-function monthsToGoal(goal: Goal, monthlyContribution: number): number {
-  const remaining = goal.target - goal.current;
+function roundMoney(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function monthsToGoal(goal: Goal, contribution: number, current = goal.current): number {
+  const remaining = goal.target - current;
   if (remaining <= 0) return 0;
-  if (monthlyContribution <= 0) return Infinity;
-  return Math.ceil(remaining / monthlyContribution);
+  if (contribution <= 0) return Infinity;
+  return Math.ceil(remaining / contribution);
 }
 
-// 8.6 Risk Tool — simple rule-based, calculated by code (not the AI)
-function assessRisk(monthlySavings: number, emergencyMonths: number, maxGoalDelay: number): RiskLevel {
-  if (monthlySavings < 0 || emergencyMonths < 1) return 'High';
-  if (maxGoalDelay >= 6) return 'High';
-  if (maxGoalDelay >= 2 || emergencyMonths < 2) return 'Medium';
-  const savingsDropRatio = monthlySavings; // placeholder hook for future rules
-  return savingsDropRatio < 0 ? 'Medium' : 'Low';
+function primaryGoalIndex(profile: CustomerProfile, scenario: ParsedScenario): number {
+  const goalIdMap: Record<string, string> = {
+    house_deposit: 'house',
+    japan_holiday: 'japan',
+    emergency_fund: 'emergency',
+  };
+  const requestedId = scenario.goalId ? (goalIdMap[scenario.goalId] ?? scenario.goalId) : undefined;
+  if (requestedId) {
+    const requestedIndex = profile.goals.findIndex((goal) => goal.id === requestedId);
+    if (requestedIndex >= 0) return requestedIndex;
+  }
+
+  const description = scenario.description.toLowerCase();
+  const aliases = /japan|holiday|trip/.test(description)
+    ? 'japan'
+    : /emergency/.test(description)
+      ? 'emergency'
+      : 'house';
+  const index = profile.goals.findIndex((goal) => goal.id === aliases);
+  return index >= 0 ? index : 0;
 }
 
-function emergencyFundMonths(profile: CustomerProfile, balance: number): number {
-  const emergencyGoal = profile.goals.find((g) => g.id === 'emergency');
-  const emergencyTarget = emergencyGoal ? emergencyGoal.target : profile.monthlyExpenses * 3;
-  return profile.monthlyExpenses > 0 ? Math.min(balance, emergencyTarget) / (profile.monthlyExpenses / 3) : 0;
-}
-
-function goalOutcomes(
-  profile: CustomerProfile,
-  monthlyContributionDelta: number,
-): GoalOutcome[] {
-  return profile.goals.map((g) => {
-    const before = monthsToGoal(g, g.monthlyContribution);
-    const after = monthsToGoal(g, Math.max(0, g.monthlyContribution + monthlyContributionDelta));
-    return { goalId: g.id, goalName: g.name, monthsBefore: before, monthsAfter: after };
-  });
-}
-
-function buildRecommendation(result: Omit<SimulationResult, 'recommendation'>): string {
-  const worstDelay = Math.max(
+function maxGoalDelay(goals: GoalOutcome[]): number {
+  return Math.max(
     0,
-    ...result.goals.map((g) => (g.monthsAfter === Infinity ? 0 : g.monthsAfter - g.monthsBefore)),
+    ...goals.map((goal) => {
+      if (goal.monthsBefore !== Infinity && goal.monthsAfter === Infinity) return 999;
+      if (goal.monthsBefore === Infinity || goal.monthsAfter === Infinity) return 0;
+      return Math.max(goal.monthsAfter - goal.monthsBefore, 0);
+    }),
   );
-  if (result.riskAfter === 'Low' && worstDelay === 0) {
-    return 'This fits comfortably within your current plan — no adjustment needed.';
-  }
-  if (worstDelay > 0) {
-    return 'Reducing dining spending by about $40 per week could help recover most of the delay.';
-  }
-  return 'Keep an eye on your monthly cash flow over the next few months.';
 }
 
-// 8.3 One-Time Purchase Tool
-function simulateOneOffPurchase(profile: CustomerProfile, amount: number): SimulationResult {
-  const balanceBefore = profile.balance;
-  const balanceAfter = balanceBefore - amount;
-  const monthsToRecover = Math.max(1, Math.ceil(amount / Math.max(profile.monthlySavings, 1)));
-  // A large one-off purchase temporarily slows the goal it's assumed to compete with (house deposit)
-  // by pausing contributions for the months needed to recover the spend, approximated here as a
-  // pro-rated contribution dip spread over 3 months for the demo.
-  const contributionDip = Math.min(profile.goals[0].monthlyContribution, amount / 3);
-  const goals = profile.goals.map((g, idx) => {
-    const before = monthsToGoal(g, g.monthlyContribution);
-    const dip = idx === 0 ? contributionDip : 0;
-    const after = monthsToGoal(g, Math.max(0, g.monthlyContribution - dip / 3));
-    return { goalId: g.id, goalName: g.name, monthsBefore: before, monthsAfter: after };
-  });
+function assessRisk(
+  cashFlowBefore: number,
+  cashFlowAfter: number,
+  balanceAfter: number,
+  monthlyExpenses: number,
+  goalDelay: number,
+): { level: RiskLevel; reasons: string[] } {
+  const highReasons: string[] = [];
+  const mediumReasons: string[] = [];
+  if (cashFlowAfter < 0) highReasons.push('Monthly cash flow becomes negative.');
+  if (balanceAfter < 0) highReasons.push('Available balance becomes negative.');
+  if (monthlyExpenses > 0 && balanceAfter < monthlyExpenses) {
+    highReasons.push('Available balance covers less than one month of expenses.');
+  }
+  if (goalDelay >= 999) highReasons.push('A financial goal can no longer progress.');
+  else if (goalDelay >= 6) highReasons.push(`A financial goal is delayed by ${goalDelay} months.`);
+  if (highReasons.length) return { level: 'High', reasons: highReasons };
 
-  const emergencyBefore = emergencyFundMonths(profile, balanceBefore);
-  const emergencyAfter = emergencyFundMonths(profile, balanceAfter);
-  const maxDelayBefore = 0;
-  const maxDelayAfter = Math.max(...goals.map((g) => (g.monthsAfter === Infinity ? 0 : g.monthsAfter - g.monthsBefore)));
+  if (monthlyExpenses > 0 && balanceAfter < monthlyExpenses * 2) {
+    mediumReasons.push('Available balance covers less than two months of expenses.');
+  }
+  if (cashFlowBefore > 0 && cashFlowAfter <= cashFlowBefore * 0.5) {
+    mediumReasons.push('Monthly cash flow falls by at least 50%.');
+  }
+  if (goalDelay >= 2) mediumReasons.push(`A financial goal is delayed by ${goalDelay} months.`);
+  if (mediumReasons.length) return { level: 'Medium', reasons: mediumReasons };
+  return { level: 'Low', reasons: ['Cash flow and financial buffers remain healthy.'] };
+}
 
-  const riskBefore = assessRisk(profile.monthlySavings, emergencyBefore, maxDelayBefore);
-  const riskAfter = assessRisk(profile.monthlySavings, emergencyAfter, maxDelayAfter);
+function recommendation(
+  scenario: ParsedScenario,
+  riskAfter: RiskLevel,
+  goalDelay: number,
+): string {
+  if (scenario.scenarioType === 'one_off_purchase') {
+    if (riskAfter === 'Low' && goalDelay === 0) {
+      return 'This purchase fits within the current plan.';
+    }
+    const weeklyRecovery = Math.ceil((scenario.amount / 52) / 5) * 5;
+    return `Reducing discretionary spending by $${weeklyRecovery} per week could help recover the goal delay.`;
+  }
+  if (scenario.scenarioType === 'recurring_expense') {
+    return 'Review recurring expenses before committing to the increase.';
+  }
+  return 'Continue the additional savings plan.';
+}
 
-  const base = {
-    balanceBefore,
+function makeResult(
+  profile: CustomerProfile,
+  scenario: ParsedScenario,
+  balanceAfter: number,
+  cashFlowAfter: number,
+  goals: GoalOutcome[],
+): SimulationResult {
+  const delay = maxGoalDelay(goals);
+  const riskBefore = assessRisk(
+    profile.monthlySavings,
+    profile.monthlySavings,
+    profile.balance,
+    profile.monthlyExpenses,
+    0,
+  );
+  const riskAfter = assessRisk(
+    profile.monthlySavings,
+    cashFlowAfter,
     balanceAfter,
-    monthlySavingsBefore: profile.monthlySavings,
-    monthlySavingsAfter: profile.monthlySavings,
-    goals,
-    riskBefore,
-    riskAfter,
-    scenario: { scenarioType: 'one_off_purchase' as ScenarioType, amount, description: 'Purchase' },
-  };
-  return { ...base, recommendation: buildRecommendation(base) };
-}
-
-// 8.4 Recurring Expense Tool
-function simulateRecurringExpense(profile: CustomerProfile, weeklyIncrease: number): SimulationResult {
-  const monthlyExtraCost = (weeklyIncrease * 52) / 12;
-  const monthlySavingsAfter = profile.monthlySavings - monthlyExtraCost;
-  const goals = goalOutcomes(profile, -monthlyExtraCost * 0.3); // spread impact across goal contributions
-  const emergencyBefore = emergencyFundMonths(profile, profile.balance);
-  const maxDelayAfter = Math.max(
-    ...goals.map((g) => (g.monthsAfter === Infinity ? 0 : g.monthsAfter - g.monthsBefore)),
+    profile.monthlyExpenses,
+    delay,
   );
-  const riskBefore = assessRisk(profile.monthlySavings, emergencyBefore, 0);
-  const riskAfter = assessRisk(monthlySavingsAfter, emergencyBefore, maxDelayAfter);
-
-  const base = {
+  return {
     balanceBefore: profile.balance,
-    balanceAfter: profile.balance,
+    balanceAfter: roundMoney(balanceAfter),
     monthlySavingsBefore: profile.monthlySavings,
-    monthlySavingsAfter,
+    monthlySavingsAfter: roundMoney(cashFlowAfter),
     goals,
-    riskBefore,
-    riskAfter,
-    scenario: { scenarioType: 'recurring_expense' as ScenarioType, amount: weeklyIncrease, description: 'Rent increase' },
+    riskBefore: riskBefore.level,
+    riskAfter: riskAfter.level,
+    riskReasons: riskAfter.reasons,
+    recommendation: recommendation(scenario, riskAfter.level, delay),
+    scenario,
   };
-  return { ...base, recommendation: buildRecommendation(base) };
 }
 
-// 8.5 Extra Savings Tool
-function simulateExtraSavings(profile: CustomerProfile, weeklyAmount: number): SimulationResult {
-  const extraMonthlySavings = (weeklyAmount * 52) / 12;
-  const monthlySavingsAfter = profile.monthlySavings + extraMonthlySavings;
-  const goals = goalOutcomes(profile, extraMonthlySavings * 0.5);
-  const emergencyBefore = emergencyFundMonths(profile, profile.balance);
-  const riskBefore = assessRisk(profile.monthlySavings, emergencyBefore, 0);
-  const riskAfter = assessRisk(monthlySavingsAfter, emergencyBefore, 0);
-
-  const base = {
-    balanceBefore: profile.balance,
-    balanceAfter: profile.balance,
-    monthlySavingsBefore: profile.monthlySavings,
-    monthlySavingsAfter,
+function simulateOneOffPurchase(
+  profile: CustomerProfile,
+  scenario: ParsedScenario,
+): SimulationResult {
+  const primaryIndex = primaryGoalIndex(profile, scenario);
+  const goals = profile.goals.map((goal, index) => {
+    const currentAfter = index === primaryIndex
+      ? Math.max(goal.current - scenario.amount, 0)
+      : goal.current;
+    return {
+      goalId: goal.id,
+      goalName: goal.name,
+      monthsBefore: monthsToGoal(goal, goal.monthlyContribution),
+      monthsAfter: monthsToGoal(goal, goal.monthlyContribution, currentAfter),
+    };
+  });
+  return makeResult(
+    profile,
+    scenario,
+    profile.balance - scenario.amount,
+    profile.monthlySavings,
     goals,
-    riskBefore,
-    riskAfter,
-    scenario: { scenarioType: 'extra_savings' as ScenarioType, amount: weeklyAmount, description: 'Extra savings' },
-  };
-  return { ...base, recommendation: buildRecommendation(base) };
+  );
 }
 
-export function runSimulation(profile: CustomerProfile, scenario: ParsedScenario): SimulationResult {
+function simulateRecurringExpense(
+  profile: CustomerProfile,
+  scenario: ParsedScenario,
+): SimulationResult {
+  const monthlyCost = roundMoney((scenario.amount * 52) / 12);
+  const cashFlowAfter = roundMoney(profile.monthlySavings - monthlyCost);
+  const totalContributions = profile.goals.reduce(
+    (total, goal) => total + goal.monthlyContribution,
+    0,
+  );
+  const availableForGoals = Math.max(totalContributions - monthlyCost, 0);
+  const scale = totalContributions > 0 ? availableForGoals / totalContributions : 0;
+  const goals = profile.goals.map((goal) => ({
+    goalId: goal.id,
+    goalName: goal.name,
+    monthsBefore: monthsToGoal(goal, goal.monthlyContribution),
+    monthsAfter: monthsToGoal(goal, goal.monthlyContribution * scale),
+  }));
+  return makeResult(profile, scenario, profile.balance, cashFlowAfter, goals);
+}
+
+function simulateExtraSavings(
+  profile: CustomerProfile,
+  scenario: ParsedScenario,
+): SimulationResult {
+  const extraMonthly = roundMoney((scenario.amount * 52) / 12);
+  const primaryIndex = primaryGoalIndex(profile, scenario);
+  const goals = profile.goals.map((goal, index) => {
+    const contribution = goal.monthlyContribution + (index === primaryIndex ? extraMonthly : 0);
+    return {
+      goalId: goal.id,
+      goalName: goal.name,
+      monthsBefore: monthsToGoal(goal, goal.monthlyContribution),
+      monthsAfter: monthsToGoal(goal, contribution),
+    };
+  });
+  return makeResult(profile, scenario, profile.balance, profile.monthlySavings, goals);
+}
+
+export function runSimulation(
+  profile: CustomerProfile,
+  scenario: ParsedScenario,
+): SimulationResult {
   switch (scenario.scenarioType) {
     case 'one_off_purchase':
-      return simulateOneOffPurchase(profile, scenario.amount);
+      return simulateOneOffPurchase(profile, scenario);
     case 'recurring_expense':
-      return simulateRecurringExpense(profile, scenario.amount);
+      return simulateRecurringExpense(profile, scenario);
     case 'extra_savings':
-      return simulateExtraSavings(profile, scenario.amount);
+      return simulateExtraSavings(profile, scenario);
     default:
-      return simulateOneOffPurchase(profile, scenario.amount);
+      return simulateOneOffPurchase(profile, scenario);
   }
 }
