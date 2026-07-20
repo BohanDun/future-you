@@ -13,7 +13,7 @@ function StatCard({
   accent?: string;
 }) {
   return (
-    <Card sx={{ p: 2.5, height: '100%' }}>
+    <Card sx={{ p: { xs: 1.75, sm: 2.25 }, height: '100%' }}>
       <Stack spacing={0.75}>
         <Typography variant="h6" sx={{ color: colors.inkSoft }}>
           {label}
@@ -21,7 +21,7 @@ function StatCard({
         <Typography
           sx={{
             fontFamily: numericFont,
-            fontSize: { xs: '1.5rem', sm: '1.75rem' },
+            fontSize: { xs: '1.3rem', sm: '1.65rem' },
             fontWeight: 500,
             color: accent ?? colors.ink,
           }}
@@ -36,16 +36,16 @@ function StatCard({
 export function SummaryCards({ profile }: { profile: CustomerProfile }) {
   return (
     <Grid container spacing={2}>
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid item xs={6}>
         <StatCard label="Current Balance" value={formatCurrency(profile.balance)} accent={colors.ink} />
       </Grid>
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid item xs={6}>
         <StatCard label="Monthly Income" value={formatCurrency(profile.monthlyIncome)} />
       </Grid>
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid item xs={6}>
         <StatCard label="Monthly Expenses" value={formatCurrency(profile.monthlyExpenses)} />
       </Grid>
-      <Grid item xs={12} sm={6} md={3}>
+      <Grid item xs={6}>
         <StatCard
           label="Monthly Savings"
           value={formatCurrency(profile.monthlySavings)}

@@ -10,12 +10,12 @@ export function Header() {
         bgcolor: colors.surface,
       }}
     >
-      <Container maxWidth="lg">
+      <Container maxWidth="xl" sx={{ px: { xs: 2, sm: 3, lg: 4 } }}>
         <Stack
           direction="row"
           alignItems="center"
           justifyContent="space-between"
-          sx={{ py: 2.5 }}
+          sx={{ py: { xs: 2, sm: 2.25 } }}
         >
           <Stack direction="row" alignItems="baseline" spacing={1.25}>
             <Box

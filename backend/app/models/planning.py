@@ -14,6 +14,25 @@ class AffordabilitySummary(BaseModel):
     mediumRiskBoundaryReasons: list[str] = Field(default_factory=list)
 
 
+class FinancialHealthComponent(BaseModel):
+    key: str
+    label: str
+    score: float
+    maxScore: float
+    summary: str
+
+
+class FinancialHealthScore(BaseModel):
+    customerId: str
+    score: int = Field(ge=0, le=100)
+    status: str
+    savingsRatePercent: float
+    reserveMonths: float
+    goalProgressPercent: float
+    components: list[FinancialHealthComponent] = Field(default_factory=list)
+    nextBestAction: str
+
+
 class StressTestRequest(BaseModel):
     customerId: str = Field(min_length=1)
     incomeLossMonths: int = Field(default=0, ge=0, le=12)

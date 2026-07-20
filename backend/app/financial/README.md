@@ -44,6 +44,20 @@ All money is calculated with Python `Decimal` and rounded to cents with `ROUND_H
 | Medium | Less than two months of expenses available; cash flow falls by at least 50%; or a goal delay of 2–5 months |
 | Low | None of the high or medium conditions apply |
 
+## Money Health score
+
+The explainable Money Health score uses three capped components. The result is
+deterministic and does not depend on an AI-generated rating.
+
+| Component | Maximum | Full-score benchmark |
+| --- | ---: | --- |
+| Savings rate | 40 | Save at least 20% of monthly income |
+| Cash reserve | 35 | Hold at least three months of expenses |
+| Goal progress | 25 | Average progress across active goals |
+
+Alex scores 77/100 (Strong): 40 points for savings rate, 24.24 points for cash
+reserve coverage, and 12.5 points for goal progress.
+
 ## Verified demo outcomes
 
 | Scenario | Result | Goal impact | Risk |

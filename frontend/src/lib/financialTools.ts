@@ -50,6 +50,24 @@ export interface AffordabilitySummary {
   mediumRiskBoundaryReasons: string[];
 }
 
+export interface FinancialHealthComponent {
+  key: string;
+  label: string;
+  score: number;
+  maxScore: number;
+  summary: string;
+}
+
+export interface FinancialHealthScore {
+  score: number;
+  status: string;
+  savingsRatePercent: number;
+  reserveMonths: number;
+  goalProgressPercent: number;
+  components: FinancialHealthComponent[];
+  nextBestAction: string;
+}
+
 export interface StressGoalImpact {
   goalId: string;
   goalName: string;
@@ -67,6 +85,12 @@ export interface StressTestResult {
   riskReasons: string[];
   goalImpacts: StressGoalImpact[];
   recommendation: string;
+}
+
+export interface CashTrajectoryPoint {
+  month: number;
+  balance: number;
+  phase: 'shock' | 'recovery';
 }
 
 export interface GoalAllocation {
@@ -123,6 +147,109 @@ function findGoal(profile: CustomerProfile, goalId: string): Goal | undefined {
 
 function roundMoney(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+export function calculateFinancialHealth(profile: CustomerProfile): FinancialHealthScore {
+  const savingsRate = profile.monthlyIncome > 0
+    ? profile.monthlySavings / profile.monthlyIncome
+    : 0;
+  const reserveMonths = profile.monthlyExpenses > 0
+    ? profile.balance / profile.monthlyExpenses
+    : 0;
+  const progressValues = profile.goals
+    .filter((goal) => goal.target > 0)
+    .map((goal) => Math.min(Math.max(goal.current / goal.target, 0), 1));
+  const averageGoalProgress = progressValues.length > 0
+    ? progressValues.reduce((sum, value) => sum + value, 0) / progressValues.length
+    : 0;
+  const savingsScore = Math.min(Math.max(savingsRate / 0.2, 0), 1) * 40;
+  const reserveScore = Math.min(Math.max(reserveMonths / 3, 0), 1) * 35;
+  const goalScore = averageGoalProgress * 25;
+  const score = Math.round(savingsScore + reserveScore + goalScore);
+  const status = score >= 80
+    ? 'Excellent'
+    : score >= 65
+      ? 'Strong'
+      : score >= 45
+        ? 'Building'
+        : 'Needs attention';
+  const reserveGap = Math.max(profile.monthlyExpenses * 3 - profile.balance, 0);
+  let nextBestAction: string;
+  if (reserveGap > 0) {
+    nextBestAction = `Build another $${reserveGap.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} in accessible reserves to cover three months of expenses.`;
+  } else if (savingsRate < 0.2) {
+    const monthlyGap = Math.max(profile.monthlyIncome * 0.2 - profile.monthlySavings, 0);
+    nextBestAction = `Increase monthly savings by $${monthlyGap.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })} to reach a 20% savings rate.`;
+  } else if (averageGoalProgress < 1) {
+    nextBestAction = 'Keep the current savings plan and review goal allocations monthly.';
+  } else {
+    nextBestAction = 'Maintain the current plan and review it after any major life change.';
+  }
+
+  return {
+    score,
+    status,
+    savingsRatePercent: roundMoney(savingsRate * 100),
+    reserveMonths: roundMoney(reserveMonths),
+    goalProgressPercent: roundMoney(averageGoalProgress * 100),
+    components: [
+      {
+        key: 'savings_rate',
+        label: 'Savings rate',
+        score: roundMoney(savingsScore),
+        maxScore: 40,
+        summary: `${(savingsRate * 100).toFixed(1)}% of income saved`,
+      },
+      {
+        key: 'cash_reserve',
+        label: 'Cash reserve',
+        score: roundMoney(reserveScore),
+        maxScore: 35,
+        summary: `${reserveMonths.toFixed(2)} months of expenses`,
+      },
+      {
+        key: 'goal_progress',
+        label: 'Goal progress',
+        score: roundMoney(goalScore),
+        maxScore: 25,
+        summary: `${(averageGoalProgress * 100).toFixed(1)}% average progress`,
+      },
+    ],
+    nextBestAction,
+  };
+}
+
+export function buildCashTrajectory(
+  profile: CustomerProfile,
+  incomeLossMonths: number,
+  unexpectedExpense: number,
+  horizonMonths = 12,
+): CashTrajectoryPoint[] {
+  let balance = roundMoney(profile.balance - unexpectedExpense);
+  const points: CashTrajectoryPoint[] = [{
+    month: 0,
+    balance,
+    phase: incomeLossMonths > 0 ? 'shock' : 'recovery',
+  }];
+  for (let month = 1; month <= horizonMonths; month += 1) {
+    if (month <= incomeLossMonths) {
+      balance = roundMoney(balance - profile.monthlyExpenses);
+    } else {
+      balance = roundMoney(balance + profile.monthlySavings);
+    }
+    points.push({
+      month,
+      balance,
+      phase: month <= incomeLossMonths ? 'shock' : 'recovery',
+    });
+  }
+  return points;
 }
 
 function monthsToGoal(goal: Goal, contribution: number, current = goal.current): number {

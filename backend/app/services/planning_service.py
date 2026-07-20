@@ -1,6 +1,6 @@
 """Deterministic planning tools for interactive financial decisions."""
 
-from decimal import ROUND_CEILING, Decimal
+from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
 
 from app.financial import assess_financial_risk, calculate_goal_completion_months
 from app.financial.money import as_decimal, as_float, money
@@ -8,6 +8,8 @@ from app.financial.risk import RiskAssessment
 from app.models.customer import CustomerProfile, FinancialGoal
 from app.models.planning import (
     AffordabilitySummary,
+    FinancialHealthComponent,
+    FinancialHealthScore,
     GoalAllocation,
     GoalAllocationResult,
     StressGoalImpact,
@@ -17,6 +19,106 @@ from app.models.scenario import ParsedScenario
 from app.services.simulation_service import run_simulation
 
 RISK_RANK = {"Low": 0, "Medium": 1, "High": 2}
+
+
+def _bounded_ratio(value: Decimal, target: Decimal) -> Decimal:
+    if target <= 0:
+        return Decimal("0")
+    return min(max(value / target, Decimal("0")), Decimal("1"))
+
+
+def calculate_financial_health(customer: CustomerProfile) -> FinancialHealthScore:
+    """Score the three financial foundations that Future You can explain."""
+    income = as_decimal(customer.monthlyIncome)
+    savings = as_decimal(customer.monthlySavings)
+    expenses = as_decimal(customer.monthlyExpenses)
+    balance = as_decimal(customer.currentBalance)
+
+    savings_rate = savings / income if income > 0 else Decimal("0")
+    reserve_months = balance / expenses if expenses > 0 else Decimal("0")
+    goal_progress_values = [
+        _bounded_ratio(as_decimal(goal.current), as_decimal(goal.target))
+        for goal in customer.goals
+        if as_decimal(goal.target) > 0
+    ]
+    average_goal_progress = (
+        sum(goal_progress_values, Decimal("0")) / len(goal_progress_values)
+        if goal_progress_values
+        else Decimal("0")
+    )
+
+    savings_score = _bounded_ratio(savings_rate, Decimal("0.20")) * Decimal("40")
+    reserve_score = _bounded_ratio(reserve_months, Decimal("3")) * Decimal("35")
+    goal_score = average_goal_progress * Decimal("25")
+    total = int(
+        (savings_score + reserve_score + goal_score).quantize(
+            Decimal("1"),
+            rounding=ROUND_HALF_UP,
+        )
+    )
+
+    if total >= 80:
+        status = "Excellent"
+    elif total >= 65:
+        status = "Strong"
+    elif total >= 45:
+        status = "Building"
+    else:
+        status = "Needs attention"
+
+    reserve_gap = max(expenses * Decimal("3") - balance, Decimal("0"))
+    if reserve_gap > 0:
+        next_action = (
+            f"Build another ${as_float(reserve_gap):,.2f} in accessible reserves "
+            "to cover three months of expenses."
+        )
+    elif savings_rate < Decimal("0.20"):
+        monthly_gap = max(income * Decimal("0.20") - savings, Decimal("0"))
+        next_action = (
+            f"Increase monthly savings by ${as_float(monthly_gap):,.2f} "
+            "to reach a 20% savings rate."
+        )
+    elif average_goal_progress < Decimal("1"):
+        next_action = "Keep the current savings plan and review goal allocations monthly."
+    else:
+        next_action = "Maintain the current plan and review it after any major life change."
+
+    return FinancialHealthScore(
+        customerId=customer.customerId,
+        score=total,
+        status=status,
+        savingsRatePercent=as_float(
+            (savings_rate * Decimal("100")).quantize(Decimal("0.01"))
+        ),
+        reserveMonths=as_float(reserve_months.quantize(Decimal("0.01"))),
+        goalProgressPercent=as_float(
+            (average_goal_progress * Decimal("100")).quantize(Decimal("0.01"))
+        ),
+        components=[
+            FinancialHealthComponent(
+                key="savings_rate",
+                label="Savings rate",
+                score=as_float(savings_score.quantize(Decimal("0.01"))),
+                maxScore=40,
+                summary=f"{as_float(savings_rate * Decimal('100')):.1f}% of income saved",
+            ),
+            FinancialHealthComponent(
+                key="cash_reserve",
+                label="Cash reserve",
+                score=as_float(reserve_score.quantize(Decimal("0.01"))),
+                maxScore=35,
+                summary=f"{as_float(reserve_months):.2f} months of expenses",
+            ),
+            FinancialHealthComponent(
+                key="goal_progress",
+                label="Goal progress",
+                score=as_float(goal_score.quantize(Decimal("0.01"))),
+                maxScore=25,
+                summary=f"{as_float(average_goal_progress * Decimal('100')):.1f}% average progress",
+            ),
+        ],
+        nextBestAction=next_action,
+    )
 
 
 def _goal(customer: CustomerProfile, goal_id: str) -> FinancialGoal:

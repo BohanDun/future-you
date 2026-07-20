@@ -1,9 +1,22 @@
 from app.models.customer import CustomerProfile
 from app.services.planning_service import (
     calculate_affordability,
+    calculate_financial_health,
     optimize_goal_allocation,
     run_stress_test,
 )
+
+
+def test_financial_health_score_is_explainable(alex: CustomerProfile) -> None:
+    result = calculate_financial_health(alex)
+
+    assert result.score == 77
+    assert result.status == "Strong"
+    assert result.savingsRatePercent == 25.96
+    assert result.reserveMonths == 2.08
+    assert result.goalProgressPercent == 50
+    assert sum(component.maxScore for component in result.components) == 100
+    assert "$3,550.00" in result.nextBestAction
 
 
 def test_affordability_finds_low_and_medium_purchase_boundaries(

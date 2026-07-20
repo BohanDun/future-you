@@ -34,6 +34,7 @@ import {
 } from '../../lib/api';
 import { formatCurrency, formatMonths } from '../../lib/format';
 import { RiskBadge } from '../Simulation/RiskBadge';
+import { CashTrajectoryChart } from './CashTrajectoryChart';
 
 interface DecisionLabProps {
   profile: CustomerProfile;
@@ -273,30 +274,41 @@ const stressPresets = [
 function StressTestTab({ profile }: { profile: CustomerProfile }) {
   const initial = stressPresets[0];
   const [selected, setSelected] = useState(initial.label);
+  const [incomeLossMonths, setIncomeLossMonths] = useState(initial.incomeLossMonths);
+  const [unexpectedExpense, setUnexpectedExpense] = useState(initial.unexpectedExpense);
+  const [appliedShock, setAppliedShock] = useState({
+    incomeLossMonths: initial.incomeLossMonths,
+    unexpectedExpense: initial.unexpectedExpense,
+  });
   const [result, setResult] = useState<StressTestResult>(() =>
     calculateStressTest(profile, initial.incomeLossMonths, initial.unexpectedExpense),
   );
   const [loading, setLoading] = useState(false);
 
-  function runPreset(preset: typeof stressPresets[number]) {
-    setSelected(preset.label);
+  function runScenario(months: number, expense: number, label: string) {
+    setSelected(label);
+    setIncomeLossMonths(months);
+    setUnexpectedExpense(expense);
+    setAppliedShock({ incomeLossMonths: months, unexpectedExpense: expense });
     setLoading(true);
-    runFinancialStressTest(
-      profile,
-      preset.incomeLossMonths,
-      preset.unexpectedExpense,
-    )
+    runFinancialStressTest(profile, months, expense)
       .then(setResult)
-      .catch(() => setResult(calculateStressTest(
-        profile,
-        preset.incomeLossMonths,
-        preset.unexpectedExpense,
-      )))
+      .catch(() => setResult(calculateStressTest(profile, months, expense)))
       .finally(() => setLoading(false));
   }
 
+  function editIncomeLoss(value: number) {
+    setIncomeLossMonths(value);
+    setSelected('Custom');
+  }
+
+  function editExpense(value: number) {
+    setUnexpectedExpense(value);
+    setSelected('Custom');
+  }
+
   return (
-    <Stack spacing={2}>
+    <Stack spacing={2.25}>
       <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
         {stressPresets.map((preset) => (
           <Chip
@@ -304,13 +316,63 @@ function StressTestTab({ profile }: { profile: CustomerProfile }) {
             label={preset.label}
             clickable
             color={selected === preset.label ? 'primary' : 'default'}
-            onClick={() => runPreset(preset)}
+            onClick={() => runScenario(
+              preset.incomeLossMonths,
+              preset.unexpectedExpense,
+              preset.label,
+            )}
           />
         ))}
       </Stack>
+
+      <Box sx={{ border: `1px solid ${colors.line}`, borderRadius: 2, p: 1.5 }}>
+        <Stack spacing={1.75}>
+          <Box>
+            <Stack direction="row" justifyContent="space-between">
+              <Typography variant="body2" fontWeight={600}>Income interrupted</Typography>
+              <Typography variant="body2" sx={{ fontFamily: numericFont }}>
+                {incomeLossMonths} month{incomeLossMonths === 1 ? '' : 's'}
+              </Typography>
+            </Stack>
+            <Slider
+              value={incomeLossMonths}
+              min={0}
+              max={6}
+              step={1}
+              marks
+              onChange={(_, value) => editIncomeLoss(value as number)}
+              aria-label="Months without income"
+            />
+          </Box>
+          <Box>
+            <Stack direction="row" justifyContent="space-between">
+              <Typography variant="body2" fontWeight={600}>Unexpected expense</Typography>
+              <Typography variant="body2" sx={{ fontFamily: numericFont }}>
+                {formatCurrency(unexpectedExpense)}
+              </Typography>
+            </Stack>
+            <Slider
+              value={unexpectedExpense}
+              min={0}
+              max={Math.max(profile.balance, 5000)}
+              step={250}
+              onChange={(_, value) => editExpense(value as number)}
+              aria-label="Unexpected expense amount"
+            />
+          </Box>
+          <Button
+            variant="contained"
+            disabled={loading || (incomeLossMonths === 0 && unexpectedExpense === 0)}
+            onClick={() => runScenario(incomeLossMonths, unexpectedExpense, 'Custom')}
+          >
+            Run custom stress test
+          </Button>
+        </Stack>
+      </Box>
+
       {loading ? <Skeleton height={150} /> : (
         <>
-          <Stack direction="row" spacing={3}>
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1.25, sm: 3 }}>
             <Box>
               <Typography variant="caption" sx={{ color: colors.inkSoft }}>Emergency runway</Typography>
               <Typography sx={{ fontFamily: numericFont, fontSize: '1.4rem' }}>
@@ -323,9 +385,20 @@ function StressTestTab({ profile }: { profile: CustomerProfile }) {
                 {formatCurrency(result.balanceAfter)}
               </Typography>
             </Box>
+            <Box>
+              <Typography variant="caption" sx={{ color: colors.inkSoft }}>Cash flow during shock</Typography>
+              <Typography sx={{ fontFamily: numericFont, fontSize: '1.4rem' }}>
+                {formatCurrency(result.monthlyCashFlowDuringShock)}/mo
+              </Typography>
+            </Box>
           </Stack>
+          <CashTrajectoryChart
+            profile={profile}
+            incomeLossMonths={appliedShock.incomeLossMonths}
+            unexpectedExpense={appliedShock.unexpectedExpense}
+          />
           <RiskBadge level={result.riskLevel} />
-          <Alert severity={result.riskLevel === 'High' ? 'error' : 'warning'}>
+          <Alert severity={result.riskLevel === 'High' ? 'error' : result.riskLevel === 'Medium' ? 'warning' : 'success'}>
             {result.riskReasons.join(' ')} {result.recommendation}
           </Alert>
           <Stack spacing={0.5}>

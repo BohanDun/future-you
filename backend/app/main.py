@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.models.customer import CustomerProfile
 from app.models.planning import (
     AffordabilitySummary,
+    FinancialHealthScore,
     GoalAllocationRequest,
     GoalAllocationResult,
     StressTestRequest,
@@ -18,6 +19,7 @@ from app.services.bedrock_service import (
 from app.services.customer_service import get_customer
 from app.services.planning_service import (
     calculate_affordability,
+    calculate_financial_health,
     optimize_goal_allocation,
     run_stress_test,
 )
@@ -35,6 +37,24 @@ app.add_middleware(
     allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type"],
 )
+
+
+@app.get("/")
+def api_home():
+    return {
+        "name": "Future You API",
+        "status": "ok",
+        "docs": "/docs",
+        "health": "/health",
+        "endpoints": [
+            "GET /customer/{customer_id}",
+            "GET /customer/{customer_id}/health-score",
+            "GET /customer/{customer_id}/affordability",
+            "POST /simulate",
+            "POST /stress-test",
+            "POST /optimize-goals",
+        ],
+    }
 
 
 @app.get("/health")
@@ -56,6 +76,17 @@ def customer_profile(customer_id: str) -> CustomerProfile:
         )
 
     return customer
+
+
+@app.get(
+    "/customer/{customer_id}/health-score",
+    response_model=FinancialHealthScore,
+)
+def customer_health_score(customer_id: str) -> FinancialHealthScore:
+    customer = get_customer(customer_id)
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    return calculate_financial_health(customer)
 
 
 @app.get(

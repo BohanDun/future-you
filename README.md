@@ -8,26 +8,27 @@ AWS DynamoDB and Amazon Bedrock through environment configuration.
 
 ```text
 future-you/
-├── frontend/                 React, TypeScript and Vite application
-│   ├── src/
-│   │   ├── components/       Dashboard, chat and simulation UI
-│   │   ├── data/             Local mock customer data
-│   │   ├── lib/              API client and local simulation fallback
-│   │   └── theme/            Material UI theme
-│   ├── .env.example
-│   ├── package.json
-│   └── vite.config.ts
-├── backend/                  FastAPI application and Lambda entry point
-│   ├── app/
-│   │   ├── agent/            Financial question parsing
-│   │   ├── models/           Pydantic request and response models
-│   │   ├── services/         Customer, simulation and Bedrock services
-│   │   ├── lambda_handler.py
-│   │   └── main.py
-│   ├── tests/
-│   ├── .env.example
-│   └── requirements.txt
-└── README.md
+|-- frontend/                 React, TypeScript and Vite application
+|   |-- src/
+|   |   |-- components/       Dashboard, chat, planning and simulation UI
+|   |   |-- data/             Local mock customer data
+|   |   |-- lib/              API client and deterministic local fallback
+|   |   `-- theme/            Material UI theme
+|   |-- .env.example
+|   |-- package.json
+|   `-- vite.config.ts
+|-- backend/                  FastAPI application and Lambda entry point
+|   |-- app/
+|   |   |-- agent/            Financial question parsing
+|   |   |-- financial/        Auditable financial calculation engine
+|   |   |-- models/           Pydantic request and response models
+|   |   |-- services/         Customer, planning and Bedrock services
+|   |   |-- lambda_handler.py
+|   |   `-- main.py
+|   |-- tests/
+|   |-- .env.example
+|   `-- requirements.txt
+`-- README.md
 ```
 
 ## Run locally
@@ -73,8 +74,11 @@ URL. Leave it empty to use the frontend's local mock pipeline.
 
 ## API
 
+- `GET /` describes the service and its available routes.
 - `GET /health` checks backend availability.
 - `GET /customer/{customer_id}` returns a customer profile.
+- `GET /customer/{customer_id}/health-score` returns an explainable 0-100
+  score for savings rate, reserve coverage and goal progress.
 - `GET /customer/{customer_id}/affordability` returns Low, Medium and High
   purchase boundaries for a selected financial goal.
 - `POST /simulate` parses a financial question and returns the simulation.
@@ -117,6 +121,7 @@ not invent financial figures.
 See `backend/app/financial/README.md` for formulas, risk thresholds, allocation
 assumptions, and the verified demo outcomes.
 
-The frontend Decision Lab adds an interactive Safe-to-Spend slider, saved
-scenario comparison, stress-test presets, goal allocation planning, future
-timeline visualization, and deterministic recovery options.
+The frontend adds an explainable Money Health score and a Decision Lab with an
+interactive Safe-to-Spend slider, saved scenario comparison, configurable
+stress testing, a 12-month cash recovery forecast, goal allocation planning,
+future timeline visualization, and deterministic recovery options.

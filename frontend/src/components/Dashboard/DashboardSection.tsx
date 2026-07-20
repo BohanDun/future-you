@@ -4,6 +4,7 @@ import { colors } from '../../theme/theme';
 import type { CustomerProfile } from '../../data/mockCustomer';
 import { SummaryCards } from './SummaryCards';
 import { GoalCards } from './GoalCards';
+import { FinancialHealthCard } from './FinancialHealthCard';
 
 const SpendingChart = lazy(() =>
   import('./SpendingChart').then((module) => ({ default: module.SpendingChart })),
@@ -20,6 +21,7 @@ export function DashboardSection({ profile }: { profile: CustomerProfile }) {
       </Stack>
 
       <SummaryCards profile={profile} />
+      <FinancialHealthCard profile={profile} />
       <GoalCards goals={profile.goals} />
       <Suspense fallback={<Skeleton variant="rounded" height={344} />}>
         <SpendingChart profile={profile} />

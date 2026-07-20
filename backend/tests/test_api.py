@@ -6,6 +6,16 @@ from app.main import app
 client = TestClient(app)
 
 
+def test_api_home_describes_available_service_routes() -> None:
+    response = client.get("/")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["name"] == "Future You API"
+    assert body["docs"] == "/docs"
+    assert "GET /customer/{customer_id}/health-score" in body["endpoints"]
+
+
 def test_customer_endpoint_returns_person_two_data() -> None:
     response = client.get("/customer/alex")
 
@@ -83,6 +93,16 @@ def test_affordability_endpoint_returns_decision_boundaries() -> None:
     assert body["lowRiskLimit"] == 300
     assert body["mediumRiskLimit"] == 4100
     assert body["highRiskStartsAt"] == 4100.01
+
+
+def test_health_score_endpoint_returns_explainable_components() -> None:
+    response = client.get("/customer/alex/health-score")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["score"] == 77
+    assert body["status"] == "Strong"
+    assert len(body["components"]) == 3
 
 
 def test_stress_test_endpoint_models_income_loss() -> None:

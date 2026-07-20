@@ -12,11 +12,13 @@ import { mockCustomer, type CustomerProfile } from '../data/mockCustomer';
 import { parseQuestion } from './scenarioParser';
 import {
   calculateAffordability as calculateAffordabilityLocally,
+  calculateFinancialHealth as calculateFinancialHealthLocally,
   calculateGoalAllocation as calculateGoalAllocationLocally,
   calculateStressTest as calculateStressTestLocally,
   runSimulation,
   toBackendGoalId,
   type AffordabilitySummary,
+  type FinancialHealthScore,
   type GoalAllocationResult,
   type ParsedScenario,
   type RiskLevel,
@@ -240,6 +242,17 @@ export async function fetchCustomerProfile(): Promise<CustomerProfile> {
   }
   await new Promise((r) => setTimeout(r, 200));
   return mockCustomer;
+}
+
+export async function fetchFinancialHealth(
+  profile: CustomerProfile,
+): Promise<FinancialHealthScore> {
+  if (API_URL) {
+    const res = await fetch(apiUrl(`/customer/${CUSTOMER_ID}/health-score`));
+    if (!res.ok) throw new Error(`Future You API error: ${res.status}`);
+    return (await res.json()) as FinancialHealthScore;
+  }
+  return calculateFinancialHealthLocally(profile);
 }
 
 export async function fetchAffordability(
