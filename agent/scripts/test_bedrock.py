@@ -1,4 +1,4 @@
-"""Quick Bedrock Converse smoke test. Requires AWS_BEARER_TOKEN_BEDROCK in the environment."""
+"""Quick Bedrock Converse smoke test. Requires AWS credentials or a configured profile."""
 
 import os
 
@@ -9,19 +9,18 @@ from agent.config import AWS_REGION, BEDROCK_MODEL_ID
 
 
 def main() -> None:
-    if not os.getenv("AWS_BEARER_TOKEN_BEDROCK"):
-        raise SystemExit(
-            "Set AWS_BEARER_TOKEN_BEDROCK first, e.g.\n"
-            "  export AWS_BEARER_TOKEN_BEDROCK='your-api-key'"
+    if not any(
+        os.getenv(key)
+        for key in (
+            "AWS_ACCESS_KEY_ID",
+            "AWS_SECRET_ACCESS_KEY",
+            "AWS_PROFILE",
+            "AWS_SESSION_TOKEN",
         )
-
-    for key in (
-        "AWS_ACCESS_KEY_ID",
-        "AWS_SECRET_ACCESS_KEY",
-        "AWS_SESSION_TOKEN",
-        "AWS_PROFILE",
     ):
-        os.environ.pop(key, None)
+        raise SystemExit(
+            "Set AWS credentials or an AWS_PROFILE before running this test."
+        )
 
     client = boto3.client(
         service_name="bedrock-runtime",

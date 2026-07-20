@@ -64,37 +64,40 @@ def simulate(
             detail="Customer not found",
         )
 
-    scenario = parse_financial_question(request.question)
+    try:
+        scenario = parse_financial_question(request.question)
 
-    if not can_run_simulation(scenario):
-        explanation = answer_freeform_question(
+        if not can_run_simulation(scenario):
+            explanation = answer_freeform_question(
+                customer=customer,
+                question=request.question,
+            )
+            return SimulationResponse(
+                success=True,
+                customer=customer,
+                explanation=explanation,
+                message=f"Guidance for {customer.name}",
+            )
+
+        result = run_simulation(
             customer=customer,
+            scenario=scenario,
+        )
+
+        explanation = generate_explanation(
+            customer=customer,
+            scenario=scenario,
+            result=result,
             question=request.question,
         )
+
         return SimulationResponse(
             success=True,
             customer=customer,
+            scenario=scenario,
+            result=result,
             explanation=explanation,
-            message=f"Guidance for {customer.name}",
+            message=f"Simulation completed for {customer.name}",
         )
-
-    result = run_simulation(
-        customer=customer,
-        scenario=scenario,
-    )
-
-    explanation = generate_explanation(
-        customer=customer,
-        scenario=scenario,
-        result=result,
-        question=request.question,
-    )
-
-    return SimulationResponse(
-        success=True,
-        customer=customer,
-        scenario=scenario,
-        result=result,
-        explanation=explanation,
-        message=f"Simulation completed for {customer.name}",
-    )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Agent error: {exc}") from exc

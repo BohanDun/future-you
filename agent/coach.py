@@ -1,7 +1,6 @@
 import logging
 
 from agent.bedrock_client import invoke_bedrock
-from agent.fallback import generate_mock_coach_response
 from agent.prompts import GENERAL_COACH_SYSTEM
 from app.models.customer import CustomerProfile
 
@@ -32,9 +31,6 @@ Question:
             max_tokens=550,
             temperature=0.55,
         )
-    except Exception:
-        logger.warning(
-            "Bedrock coach response failed; using mock coach",
-            exc_info=True,
-        )
-        return generate_mock_coach_response(customer, question)
+    except Exception as exc:
+        logger.error("Bedrock coach response failed", exc_info=True)
+        raise RuntimeError("Bedrock coach response failed") from exc

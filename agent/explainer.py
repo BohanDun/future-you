@@ -1,7 +1,6 @@
 import logging
 
 from agent.bedrock_client import invoke_bedrock
-from agent.fallback import generate_mock_explanation
 from agent.prompts import EXPLANATION_SYSTEM
 from app.models.customer import CustomerProfile
 from app.models.scenario import ParsedScenario
@@ -31,18 +30,9 @@ Simulation result:
 {result.model_dump_json()}
 """.strip()
 
-    try:
-        return invoke_bedrock(
-            system_prompt=EXPLANATION_SYSTEM,
-            user_prompt=user_prompt,
-            max_tokens=450,
-            temperature=0.35,
-        )
-    except Exception:
-        logger.warning(
-            "Bedrock explanation generation failed; using mock explanation",
-            exc_info=True,
-        )
-        return generate_mock_explanation(
-            customer, scenario, result, question=question
-        )
+    return invoke_bedrock(
+        system_prompt=EXPLANATION_SYSTEM,
+        user_prompt=user_prompt,
+        max_tokens=450,
+        temperature=0.35,
+    )

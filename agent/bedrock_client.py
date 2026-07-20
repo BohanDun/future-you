@@ -11,16 +11,18 @@ logger = logging.getLogger(__name__)
 
 @lru_cache(maxsize=1)
 def _runtime_client():
-    if not os.getenv("AWS_BEARER_TOKEN_BEDROCK"):
-        raise RuntimeError(
-            "AWS_BEARER_TOKEN_BEDROCK is not set. "
-            "Export your Bedrock API key before starting the backend."
+    try:
+        return boto3.client(
+            service_name="bedrock-runtime",
+            region_name=AWS_REGION,
         )
-
-    return boto3.client(
-        service_name="bedrock-runtime",
-        region_name=AWS_REGION,
-    )
+    except Exception as exc:  # pragma: no cover - depends on AWS environment
+        raise RuntimeError(
+            "Unable to initialize the Bedrock runtime client. Configure AWS credentials "
+            "for the backend environment (for example via AWS_ACCESS_KEY_ID / "
+            "AWS_SECRET_ACCESS_KEY or an AWS profile), or set AI_MODE to mock. "
+            f"Original error: {exc}"
+        ) from exc
 
 
 def invoke_bedrock(
@@ -30,20 +32,23 @@ def invoke_bedrock(
     max_tokens: int,
     temperature: float = 0.1,
 ) -> str:
-    response = _runtime_client().converse(
-        modelId=BEDROCK_MODEL_ID,
-        system=[{"text": system_prompt}],
-        messages=[
-            {
-                "role": "user",
-                "content": [{"text": user_prompt}],
-            }
-        ],
-        inferenceConfig={
-            "maxTokens": max_tokens,
-            "temperature": temperature,
-        },
-    )
+    try:
+        response = _runtime_client().converse(
+            modelId=BEDROCK_MODEL_ID,
+            system=[{"text": system_prompt}],
+            messages=[
+                {
+                    "role": "user",
+                    "content": [{"text": user_prompt}],
+                }
+            ],
+            inferenceConfig={
+                "maxTokens": max_tokens,
+                "temperature": temperature,
+            },
+        )
+    except Exception as exc:
+        raise RuntimeError(f"Bedrock converse call failed. Original error: {exc}") from exc
 
     content = response["output"]["message"]["content"]
     text_parts = [

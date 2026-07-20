@@ -22,7 +22,8 @@ export interface AskFutureYouResponse {
   simulation: SimulationResult | null;
 }
 
-const API_URL = import.meta.env.VITE_API_URL as string | undefined;
+const DEFAULT_API_URL = 'http://127.0.0.1:8000';
+const API_URL = (import.meta.env.VITE_API_URL ?? DEFAULT_API_URL).trim();
 const CUSTOMER_ID = 'alex';
 
 interface BackendGoal {
@@ -78,7 +79,8 @@ interface BackendResponse {
 }
 
 function apiUrl(path: string): string {
-  return `${API_URL?.replace(/\/$/, '')}${path}`;
+  const baseUrl = API_URL.replace(/\/$/, '');
+  return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
 function toCustomerProfile(customer: BackendCustomer): CustomerProfile {
@@ -205,37 +207,29 @@ function explainLocally(result: SimulationResult): string {
 }
 
 export async function askFutureYou(question: string): Promise<AskFutureYouResponse> {
-  if (API_URL) {
-    const res = await fetch(apiUrl('/simulate'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ customerId: CUSTOMER_ID, question }),
-    });
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as { detail?: string } | null;
-      const detail = body?.detail ?? `Future You API error: ${res.status}`;
-      throw new Error(detail);
-    }
-    const response = (await res.json()) as BackendResponse;
-    return {
-      explanation: response.explanation ?? 'Thanks for your question.',
-      simulation: toSimulationResult(response),
-    };
+  const res = await fetch(apiUrl('/simulate'), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ customerId: CUSTOMER_ID, question }),
+  });
+
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as { detail?: string } | null;
+    const detail = body?.detail ?? `Future You API error: ${res.status}`;
+    throw new Error(detail);
   }
 
-  // --- local fallback (no backend yet) ---
-  await new Promise((r) => setTimeout(r, 550)); // small delay so the UI's loading state is visible
-  const scenario = parseQuestion(question);
-  const simulation = runSimulation(mockCustomer, scenario);
-  return { explanation: explainLocally(simulation), simulation };
+  const response = (await res.json()) as BackendResponse;
+  return {
+    explanation: response.explanation ?? 'Thanks for your question.',
+    simulation: toSimulationResult(response),
+  };
 }
 
 export async function fetchCustomerProfile(): Promise<CustomerProfile> {
-  if (API_URL) {
-    const res = await fetch(apiUrl(`/customer/${CUSTOMER_ID}`));
-    if (!res.ok) throw new Error(`Future You API error: ${res.status}`);
-    return toCustomerProfile((await res.json()) as BackendCustomer);
+  const res = await fetch(apiUrl(`/customer/${CUSTOMER_ID}`));
+  if (!res.ok) {
+    throw new Error(`Future You API error: ${res.status}`);
   }
-  await new Promise((r) => setTimeout(r, 200));
-  return mockCustomer;
+  return toCustomerProfile((await res.json()) as BackendCustomer);
 }
