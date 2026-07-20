@@ -75,7 +75,12 @@ URL. Leave it empty to use the frontend's local mock pipeline.
 
 - `GET /health` checks backend availability.
 - `GET /customer/{customer_id}` returns a customer profile.
+- `GET /customer/{customer_id}/affordability` returns Low, Medium and High
+  purchase boundaries for a selected financial goal.
 - `POST /simulate` parses a financial question and returns the simulation.
+- `POST /stress-test` models income-loss and emergency-expense shocks.
+- `POST /optimize-goals` reallocates the existing monthly savings budget to
+  meet a selected goal deadline without creating new money.
 
 Example request:
 
@@ -111,3 +116,7 @@ not invent financial figures.
 
 See `backend/app/financial/README.md` for formulas, risk thresholds, allocation
 assumptions, and the verified demo outcomes.
+
+The frontend Decision Lab adds an interactive Safe-to-Spend slider, saved
+scenario comparison, stress-test presets, goal allocation planning, future
+timeline visualization, and deterministic recovery options.

@@ -11,10 +11,17 @@
 import { mockCustomer, type CustomerProfile } from '../data/mockCustomer';
 import { parseQuestion } from './scenarioParser';
 import {
+  calculateAffordability as calculateAffordabilityLocally,
+  calculateGoalAllocation as calculateGoalAllocationLocally,
+  calculateStressTest as calculateStressTestLocally,
   runSimulation,
+  toBackendGoalId,
+  type AffordabilitySummary,
+  type GoalAllocationResult,
   type ParsedScenario,
   type RiskLevel,
   type SimulationResult,
+  type StressTestResult,
 } from './financialTools';
 
 export interface AskFutureYouResponse {
@@ -233,4 +240,88 @@ export async function fetchCustomerProfile(): Promise<CustomerProfile> {
   }
   await new Promise((r) => setTimeout(r, 200));
   return mockCustomer;
+}
+
+export async function fetchAffordability(
+  profile: CustomerProfile,
+  goalId: string,
+): Promise<AffordabilitySummary> {
+  if (API_URL) {
+    const backendGoalId = toBackendGoalId(goalId);
+    const res = await fetch(
+      apiUrl(`/customer/${CUSTOMER_ID}/affordability?goalId=${encodeURIComponent(backendGoalId)}`),
+    );
+    if (!res.ok) throw new Error(`Future You API error: ${res.status}`);
+    return (await res.json()) as AffordabilitySummary;
+  }
+  return calculateAffordabilityLocally(profile, goalId);
+}
+
+export async function runFinancialStressTest(
+  profile: CustomerProfile,
+  incomeLossMonths: number,
+  unexpectedExpense: number,
+): Promise<StressTestResult> {
+  if (API_URL) {
+    const res = await fetch(apiUrl('/stress-test'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerId: CUSTOMER_ID,
+        incomeLossMonths,
+        unexpectedExpense,
+      }),
+    });
+    if (!res.ok) throw new Error(`Future You API error: ${res.status}`);
+    const response = await res.json() as StressTestResult & {
+      goalImpacts: Array<StressTestResult['goalImpacts'][number] & {
+        monthsBefore: number | null;
+        monthsAfter: number | null;
+      }>;
+    };
+    return {
+      ...response,
+      riskLevel: response.riskLevel as RiskLevel,
+      goalImpacts: response.goalImpacts.map((goal) => ({
+        ...goal,
+        monthsBefore: goal.monthsBefore ?? Infinity,
+        monthsAfter: goal.monthsAfter ?? Infinity,
+      })),
+    };
+  }
+  return calculateStressTestLocally(profile, incomeLossMonths, unexpectedExpense);
+}
+
+export async function optimizeGoalPlan(
+  profile: CustomerProfile,
+  priorityGoalId: string,
+  targetMonths: number,
+): Promise<GoalAllocationResult> {
+  if (API_URL) {
+    const res = await fetch(apiUrl('/optimize-goals'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        customerId: CUSTOMER_ID,
+        priorityGoalId: toBackendGoalId(priorityGoalId),
+        targetMonths,
+      }),
+    });
+    if (!res.ok) throw new Error(`Future You API error: ${res.status}`);
+    const response = await res.json() as GoalAllocationResult & {
+      allocations: Array<GoalAllocationResult['allocations'][number] & {
+        monthsBefore: number | null;
+        monthsAfter: number | null;
+      }>;
+    };
+    return {
+      ...response,
+      allocations: response.allocations.map((allocation) => ({
+        ...allocation,
+        monthsBefore: allocation.monthsBefore ?? Infinity,
+        monthsAfter: allocation.monthsAfter ?? Infinity,
+      })),
+    };
+  }
+  return calculateGoalAllocationLocally(profile, priorityGoalId, targetMonths);
 }

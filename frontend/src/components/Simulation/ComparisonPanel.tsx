@@ -2,8 +2,11 @@ import { Box, Card, Divider, Grid, Stack, Typography } from '@mui/material';
 import { colors, numericFont } from '../../theme/theme';
 import { formatCurrency, formatMonths } from '../../lib/format';
 import type { SimulationResult } from '../../lib/financialTools';
+import type { CustomerProfile } from '../../data/mockCustomer';
 import { RiskBadge } from './RiskBadge';
 import { Horizon } from './Horizon';
+import { FutureTimeline } from './FutureTimeline';
+import { RecoveryPlan } from './RecoveryPlan';
 
 function Column({
   title,
@@ -60,7 +63,13 @@ function Column({
   );
 }
 
-export function ComparisonPanel({ result }: { result: SimulationResult }) {
+export function ComparisonPanel({
+  result,
+  profile,
+}: {
+  result: SimulationResult;
+  profile: CustomerProfile;
+}) {
   const riskBackground = result.riskAfter === 'High'
     ? colors.riskHighSoft
     : result.riskAfter === 'Medium'
@@ -88,6 +97,9 @@ export function ComparisonPanel({ result }: { result: SimulationResult }) {
 
         <Horizon riskBefore={result.riskBefore} riskAfter={result.riskAfter} />
 
+        <Divider />
+        <FutureTimeline result={result} />
+
         <Box sx={{ bgcolor: riskBackground, borderRadius: 2, p: 2 }}>
           <Typography variant="h6" sx={{ color: colors.inkSoft, mb: 1 }}>
             Why this risk level
@@ -101,12 +113,7 @@ export function ComparisonPanel({ result }: { result: SimulationResult }) {
           </Stack>
         </Box>
 
-        <Box sx={{ bgcolor: colors.horizonGoldSoft, borderRadius: 2, p: 2 }}>
-          <Typography variant="h6" sx={{ color: colors.inkSoft, mb: 0.75 }}>
-            Suggested adjustment
-          </Typography>
-          <Typography variant="body2">{result.recommendation}</Typography>
-        </Box>
+        <RecoveryPlan profile={profile} result={result} />
       </Stack>
     </Card>
   );

@@ -8,11 +8,13 @@ import type { SimulationResult } from '../../lib/financialTools';
 import { ChatMessage, type Message } from './ChatMessage';
 import { SuggestedQuestions } from './SuggestedQuestions';
 import { ComparisonPanel } from '../Simulation/ComparisonPanel';
+import { DecisionLab } from '../Planning/DecisionLab';
+import type { CustomerProfile } from '../../data/mockCustomer';
 
 let idCounter = 0;
 const nextId = () => `msg-${idCounter++}`;
 
-export function AgentSection() {
+export function AgentSection({ profile }: { profile: CustomerProfile }) {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: nextId(),
@@ -120,7 +122,9 @@ export function AgentSection() {
         </Stack>
       </Card>
 
-      {result && <ComparisonPanel result={result} />}
+      <DecisionLab profile={profile} onAsk={send} />
+
+      {result && <ComparisonPanel result={result} profile={profile} />}
     </Stack>
   );
 }

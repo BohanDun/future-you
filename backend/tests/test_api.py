@@ -72,6 +72,51 @@ def test_extra_savings_can_target_named_goal_through_api() -> None:
     assert goals["emergency_fund"]["monthsAfter"] == 3
 
 
+def test_affordability_endpoint_returns_decision_boundaries() -> None:
+    response = client.get(
+        "/customer/alex/affordability",
+        params={"goalId": "house_deposit"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["lowRiskLimit"] == 300
+    assert body["mediumRiskLimit"] == 4100
+    assert body["highRiskStartsAt"] == 4100.01
+
+
+def test_stress_test_endpoint_models_income_loss() -> None:
+    response = client.post(
+        "/stress-test",
+        json={"customerId": "alex", "incomeLossMonths": 2},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["balanceAfter"] == 300
+    assert body["riskLevel"] == "High"
+    assert len(body["goalImpacts"]) == 3
+
+
+def test_goal_optimizer_endpoint_preserves_monthly_savings_budget() -> None:
+    response = client.post(
+        "/optimize-goals",
+        json={
+            "customerId": "alex",
+            "priorityGoalId": "house_deposit",
+            "targetMonths": 12,
+        },
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["feasible"] is True
+    assert sum(
+        allocation["monthlyContributionAfter"]
+        for allocation in body["allocations"]
+    ) == 1350
+
+
 def test_zero_amount_is_rejected() -> None:
     response = client.post(
         "/simulate",

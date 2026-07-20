@@ -1,7 +1,14 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.models.customer import CustomerProfile
+from app.models.planning import (
+    AffordabilitySummary,
+    GoalAllocationRequest,
+    GoalAllocationResult,
+    StressTestRequest,
+    StressTestResult,
+)
 from app.models.request import SimulationRequest
 from app.models.response import SimulationResponse
 from app.services.bedrock_service import (
@@ -9,6 +16,11 @@ from app.services.bedrock_service import (
     parse_financial_question,
 )
 from app.services.customer_service import get_customer
+from app.services.planning_service import (
+    calculate_affordability,
+    optimize_goal_allocation,
+    run_stress_test,
+)
 from app.services.simulation_service import run_simulation
 
 app = FastAPI(title="Future You API")
@@ -44,6 +56,56 @@ def customer_profile(customer_id: str) -> CustomerProfile:
         )
 
     return customer
+
+
+@app.get(
+    "/customer/{customer_id}/affordability",
+    response_model=AffordabilitySummary,
+)
+def customer_affordability(
+    customer_id: str,
+    goal_id: str = Query(default="house_deposit", alias="goalId"),
+) -> AffordabilitySummary:
+    customer = get_customer(customer_id)
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    try:
+        return calculate_affordability(customer, goal_id)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.post(
+    "/stress-test",
+    response_model=StressTestResult,
+)
+def stress_test(request: StressTestRequest) -> StressTestResult:
+    customer = get_customer(request.customerId)
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    return run_stress_test(
+        customer,
+        income_loss_months=request.incomeLossMonths,
+        unexpected_expense=request.unexpectedExpense,
+    )
+
+
+@app.post(
+    "/optimize-goals",
+    response_model=GoalAllocationResult,
+)
+def optimize_goals(request: GoalAllocationRequest) -> GoalAllocationResult:
+    customer = get_customer(request.customerId)
+    if customer is None:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    try:
+        return optimize_goal_allocation(
+            customer,
+            priority_goal_id=request.priorityGoalId,
+            target_months=request.targetMonths,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
 
 
 @app.post(

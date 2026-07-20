@@ -42,7 +42,7 @@ export default function App() {
             {profile ? <DashboardSection profile={profile} /> : <CircularProgress aria-label="Loading customer profile" />}
           </Grid>
           <Grid item xs={12} md={6}>
-            <AgentSection />
+            {profile ? <AgentSection profile={profile} /> : <CircularProgress aria-label="Loading decision tools" />}
           </Grid>
         </Grid>
       </Container>

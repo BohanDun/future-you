@@ -26,6 +26,16 @@ A one-time purchase affects a goal named in the question, such as Japan Holiday.
 
 All money is calculated with Python `Decimal` and rounded to cents with `ROUND_HALF_UP` before entering the API models.
 
+## Decision planning
+
+- Safe-to-Spend uses a cent-accurate binary search over the deterministic risk
+  engine to find the maximum Low and Medium risk purchase for a selected goal.
+- Stress Test models up to 12 months of income loss plus an optional emergency
+  expense, then reports balance, emergency runway, risk reasons and goal delays.
+- Goal Optimizer reallocates the existing monthly savings budget. It never
+  increases total contributions above income minus expenses, and reports when
+  a requested deadline is mathematically infeasible.
+
 ## Risk rules
 
 | Level | Deterministic conditions |
