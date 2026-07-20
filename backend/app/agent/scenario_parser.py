@@ -2,7 +2,6 @@ import re
 
 from app.models.scenario import ParsedScenario
 
-
 _AMOUNT_PATTERN = re.compile(
     r"\$?\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?)"
 )
@@ -23,13 +22,14 @@ def parse_question_mock(question: str) -> ParsedScenario:
 
     if any(
         keyword in normalized
-        for keyword in ["buy", "purchase", "pay for", "book"]
+        for keyword in ["buy", "purchase", "pay for", "book", "afford"]
     ):
         return ParsedScenario(
             scenarioType="one_off_purchase",
             amount=amount,
             frequency="one_time",
             description=_extract_purchase_description(normalized),
+            goalId=_extract_goal_id(normalized),
         )
 
     if any(
@@ -41,6 +41,7 @@ def parse_question_mock(question: str) -> ParsedScenario:
             amount=amount,
             frequency=_extract_frequency(normalized),
             description="Recurring expense increase",
+            goalId=None,
         )
 
     if any(
@@ -52,6 +53,7 @@ def parse_question_mock(question: str) -> ParsedScenario:
             amount=amount,
             frequency=_extract_frequency(normalized),
             description="Extra savings",
+            goalId=_extract_goal_id(normalized),
         )
 
     return ParsedScenario(
@@ -59,6 +61,7 @@ def parse_question_mock(question: str) -> ParsedScenario:
         amount=None,
         frequency=None,
         description=None,
+        goalId=None,
     )
 
 
@@ -76,6 +79,9 @@ def _extract_frequency(question: str) -> str | None:
 
 
 def _extract_purchase_description(question: str) -> str:
+    if "japan" in question and any(word in question for word in ["trip", "holiday"]):
+        return "Japan trip"
+
     known_items = [
         "laptop",
         "car",
@@ -90,3 +96,15 @@ def _extract_purchase_description(question: str) -> str:
             return item.title()
 
     return "One-time purchase"
+
+
+def _extract_goal_id(question: str) -> str | None:
+    aliases = {
+        "house_deposit": ["house", "home", "deposit"],
+        "japan_holiday": ["japan", "holiday", "trip"],
+        "emergency_fund": ["emergency"],
+    }
+    for goal_id, keywords in aliases.items():
+        if any(keyword in question for keyword in keywords):
+            return goal_id
+    return None

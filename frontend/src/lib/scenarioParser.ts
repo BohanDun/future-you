@@ -11,6 +11,11 @@ function extractAmount(text: string): number {
 }
 
 function extractDescription(text: string): string {
+  const goalId = extractGoalId(text);
+  if (goalId === 'japan_holiday') return 'Japan trip';
+  if (goalId === 'emergency_fund') return 'Emergency fund';
+  if (goalId === 'house_deposit') return 'House deposit';
+
   const stop = new Set([
     'what', 'happens', 'if', 'i', 'a', 'an', 'the', 'buy', 'to', 'can', 'afford',
     'next', 'year', 'save', 'extra', 'per', 'week', 'my', 'increases', 'by',
@@ -21,6 +26,14 @@ function extractDescription(text: string): string {
     .filter((w) => w && !stop.has(w.toLowerCase()) && Number.isNaN(Number(w)));
   const label = words.slice(-2).join(' ').trim();
   return label ? label[0].toUpperCase() + label.slice(1) : 'This scenario';
+}
+
+function extractGoalId(text: string): string | undefined {
+  const lower = text.toLowerCase();
+  if (/house|home|deposit/.test(lower)) return 'house_deposit';
+  if (/japan|holiday|trip/.test(lower)) return 'japan_holiday';
+  if (/emergency/.test(lower)) return 'emergency_fund';
+  return undefined;
 }
 
 export function parseQuestion(question: string): ParsedScenario {
@@ -37,5 +50,5 @@ export function parseQuestion(question: string): ParsedScenario {
     scenarioType = 'one_off_purchase';
   }
 
-  return { scenarioType, amount, description };
+  return { scenarioType, amount, description, goalId: extractGoalId(question) };
 }

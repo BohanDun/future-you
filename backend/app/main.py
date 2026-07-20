@@ -11,7 +11,6 @@ from app.services.bedrock_service import (
 from app.services.customer_service import get_customer
 from app.services.simulation_service import run_simulation
 
-
 app = FastAPI(title="Future You API")
 
 app.add_middleware(
@@ -70,10 +69,10 @@ def simulate(
             detail="Unsupported financial scenario",
         )
 
-    if scenario.amount is None:
+    if scenario.amount is None or scenario.amount <= 0:
         raise HTTPException(
             status_code=400,
-            detail="A financial amount is required",
+            detail="A positive financial amount is required",
         )
 
     result = run_simulation(

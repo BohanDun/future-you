@@ -10,7 +10,6 @@ from app.models.customer import CustomerProfile
 from app.models.scenario import ParsedScenario
 from app.models.simulation import SimulationResult
 
-
 logger = logging.getLogger(__name__)
 
 AI_MODE = os.getenv("AI_MODE", "mock").strip().lower()
@@ -81,6 +80,8 @@ with these fields:
 - amount: a non-negative number or null
 - frequency: weekly, monthly, yearly, one_time, or null
 - description: a short string or null
+- goalId: house_deposit, japan_holiday, emergency_fund, or null. Use null
+  when the question does not name a goal.
 
 Question: {question}
 """.strip()
@@ -102,12 +103,73 @@ def _generate_mock_explanation(
     scenario: ParsedScenario,
     result: SimulationResult,
 ) -> str:
-    description = scenario.description or "this change"
-    return (
-        f"For {customer.name}, {description} changes the balance from "
-        f"${result.before.balance:,.2f} to ${result.after.balance:,.2f}. "
-        f"The estimated risk level is {result.riskLevel}."
+    description = (scenario.description or "This change").lower()
+    target_impact = next(
+        (
+            impact
+            for impact in result.goalImpacts
+            if scenario.goalId and impact.goalId == scenario.goalId
+        ),
+        None,
     )
+    if target_impact is None:
+        target_impact = next(
+            (
+                impact
+                for impact in result.goalImpacts
+                if impact.monthsBefore != impact.monthsAfter
+            ),
+            result.goalImpacts[0] if result.goalImpacts else None,
+        )
+
+    if scenario.scenarioType == "one_off_purchase":
+        impact = (
+            f"The {description} would change your available balance from "
+            f"${result.before.balance:,.2f} to ${result.after.balance:,.2f}."
+        )
+    elif scenario.scenarioType == "recurring_expense":
+        impact = (
+            f"The {description} would change monthly cash flow from "
+            f"${result.before.monthlyCashFlow:,.2f} to "
+            f"${result.after.monthlyCashFlow:,.2f}."
+        )
+    else:
+        contribution = target_impact.monthlyContributionAfter if target_impact else 0
+        goal_name = target_impact.goalName if target_impact else "financial goal"
+        impact = (
+            f"The {description} would raise your {goal_name} contribution to "
+            f"${contribution:,.2f} per month."
+        )
+
+    timeline = ""
+    if (
+        target_impact
+        and target_impact.monthsBefore is not None
+        and target_impact.monthsAfter is not None
+    ):
+        difference = target_impact.monthsAfter - target_impact.monthsBefore
+        if difference > 0:
+            timeline = (
+                f" Your {target_impact.goalName} is delayed by {difference} "
+                f"month{'s' if difference != 1 else ''}."
+            )
+        elif difference < 0:
+            timeline = (
+                f" Your {target_impact.goalName} moves forward by {abs(difference)} "
+                f"month{'s' if difference != -1 else ''}."
+            )
+        else:
+            timeline = f" Your {target_impact.goalName} timeline is unchanged."
+
+    recommendation = result.recommendation
+    adjustment = recommendation.description if recommendation else ""
+    if recommendation and recommendation.weeklyAmount is not None:
+        adjustment += f" A ${recommendation.weeklyAmount:,.2f} weekly adjustment is suggested."
+
+    return (
+        f"{impact}{timeline} The calculated risk level is {result.riskLevel}. "
+        f"{adjustment}"
+    ).strip()
 
 
 def generate_explanation(

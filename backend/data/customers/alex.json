@@ -1,0 +1,31 @@
+{
+  "customerId": "alex",
+  "name": "Alex",
+  "currentBalance": 8000,
+  "monthlyIncome": 5200,
+  "monthlyExpenses": 3850,
+  "monthlySavings": 1350,
+  "goals": [
+    {
+      "goalId": "house_deposit",
+      "name": "House Deposit",
+      "target": 20000,
+      "current": 8000,
+      "monthlyContribution": 700
+    },
+    {
+      "goalId": "japan_holiday",
+      "name": "Japan Holiday",
+      "target": 3000,
+      "current": 1200,
+      "monthlyContribution": 300
+    },
+    {
+      "goalId": "emergency_fund",
+      "name": "Emergency Fund",
+      "target": 5000,
+      "current": 3500,
+      "monthlyContribution": 350
+    }
+  ]
+}

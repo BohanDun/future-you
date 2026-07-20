@@ -20,9 +20,18 @@ export function SpendingChart({ profile }: { profile: CustomerProfile }) {
           <Typography variant="h6" sx={{ color: colors.inkSoft }}>
             Spending by category
           </Typography>
-          <Typography variant="body2" sx={{ color: colors.inkSoft }}>
-            {diningInsight()}
-          </Typography>
+          <Stack spacing={0.5}>
+            {(profile.insights.length ? profile.insights : [diningInsight(profile)]).map((insight) => (
+              <Stack key={insight} direction="row" spacing={1} alignItems="flex-start">
+                <Typography aria-hidden sx={{ color: colors.futureTeal, lineHeight: 1.5 }}>
+                  •
+                </Typography>
+                <Typography variant="body2" sx={{ color: colors.inkSoft }}>
+                  {insight}
+                </Typography>
+              </Stack>
+            ))}
+          </Stack>
         </Stack>
 
         <div style={{ width: '100%', height: 220 }}>

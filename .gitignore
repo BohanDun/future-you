@@ -9,11 +9,14 @@ dist/
 *.tsbuildinfo
 
 # Python
+.venv/
 backend/.venv/
 backend/__pycache__/
 **/__pycache__/
 backend/.pytest_cache/
 backend/.ruff_cache/
+.coverage
+*.egg-info/
 *.pyc
 
 # Lambda build artifacts

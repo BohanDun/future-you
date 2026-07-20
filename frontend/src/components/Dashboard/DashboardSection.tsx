@@ -1,9 +1,13 @@
-import { Stack, Typography } from '@mui/material';
+import { lazy, Suspense } from 'react';
+import { Skeleton, Stack, Typography } from '@mui/material';
 import { colors } from '../../theme/theme';
 import type { CustomerProfile } from '../../data/mockCustomer';
 import { SummaryCards } from './SummaryCards';
 import { GoalCards } from './GoalCards';
-import { SpendingChart } from './SpendingChart';
+
+const SpendingChart = lazy(() =>
+  import('./SpendingChart').then((module) => ({ default: module.SpendingChart })),
+);
 
 export function DashboardSection({ profile }: { profile: CustomerProfile }) {
   return (
@@ -17,7 +21,9 @@ export function DashboardSection({ profile }: { profile: CustomerProfile }) {
 
       <SummaryCards profile={profile} />
       <GoalCards goals={profile.goals} />
-      <SpendingChart profile={profile} />
+      <Suspense fallback={<Skeleton variant="rounded" height={344} />}>
+        <SpendingChart profile={profile} />
+      </Suspense>
     </Stack>
   );
 }
