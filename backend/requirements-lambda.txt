@@ -1,0 +1,9 @@
+# Runtime dependencies for the AWS Lambda deployment package.
+# Keep development-only tools such as pytest, Ruff, coverage, and Uvicorn in
+# requirements.txt; Lambda only needs the application and AWS integrations.
+boto3==1.43.48
+certifi==2026.6.17
+fastapi==0.139.0
+mangum==0.21.0
+PyJWT[crypto]==2.10.1
+pydantic==2.13.4

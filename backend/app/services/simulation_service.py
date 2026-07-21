@@ -72,13 +72,22 @@ def _project_to_horizon(
 
     for _ in range(horizon_months):
         liquid_balance += cash_flow
+        # Goal contributions are allocations of this month's positive surplus.
+        # Do not fund them from an existing cash buffer or while cash flow is
+        # negative; that would create savings by driving liquid cash below zero.
+        available_for_goals = max(cash_flow, Decimal("0"))
         for goal in customer.goals:
             current = projected_goals[goal.goalId]
             remaining = max(as_decimal(goal.target) - current, Decimal("0"))
-            contributed = min(as_decimal(goal.monthlyContribution), remaining)
+            contributed = min(
+                as_decimal(goal.monthlyContribution),
+                remaining,
+                available_for_goals,
+            )
             projected_goals[goal.goalId] = current + contributed
             liquid_balance -= contributed
             total_contributed += contributed
+            available_for_goals -= contributed
         minimum_balance = min(minimum_balance, liquid_balance)
 
     return (

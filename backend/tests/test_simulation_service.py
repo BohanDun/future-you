@@ -105,9 +105,9 @@ def test_projection_flags_a_negative_balance_during_the_horizon() -> None:
         name="Tight Plan",
         currency="NZD",
         currentBalance=100,
-        monthlyIncome=200,
-        monthlyExpenses=0,
-        monthlySavings=200,
+        monthlyIncome=0,
+        monthlyExpenses=200,
+        monthlySavings=-200,
         goals=[{
             "goalId": "short_goal",
             "name": "Short Goal",
@@ -126,10 +126,54 @@ def test_projection_flags_a_negative_balance_during_the_horizon() -> None:
         ),
     )
 
-    assert result.minimumProjectedBalance == -200
-    assert result.after.balance == 150
+    assert result.minimumProjectedBalance == -500
+    assert result.after.balance == -550
     assert result.riskLevel == "High"
-    assert "during the projection" in result.riskReasons[0]
+    assert "negative" in result.riskReasons[0].lower()
+
+
+def test_projection_does_not_fund_goals_without_positive_cash_flow() -> None:
+    customer = CustomerProfile(
+        customerId="zero-surplus",
+        name="Zero Surplus",
+        currency="NZD",
+        currentBalance=1000,
+        monthlyIncome=2700,
+        monthlyExpenses=2700,
+        monthlySavings=0,
+        goals=[
+            {
+                "goalId": "emergency_one",
+                "name": "Emergency Fund One",
+                "target": 5000,
+                "current": 100,
+                "monthlyContribution": 300,
+            },
+            {
+                "goalId": "emergency_two",
+                "name": "Emergency Fund Two",
+                "target": 5000,
+                "current": 0,
+                "monthlyContribution": 250,
+            },
+        ],
+    )
+
+    result = run_simulation(
+        customer,
+        ParsedScenario(
+            scenarioType="one_off_purchase",
+            amount=3000,
+            description="Trip to Japan",
+            horizonMonths=12,
+        ),
+    )
+
+    assert result.goalContributionsByEvent == 0
+    assert result.atEventBefore is not None
+    assert result.atEventBefore.balance == 1000
+    assert result.after.balance == -2000
+    assert result.riskLevel == "High"
 
 
 def test_weekly_rent_increase_demo(alex: CustomerProfile) -> None:

@@ -42,7 +42,9 @@ def apply_one_time_purchase(
     current_balance: MoneyInput,
     purchase_amount: MoneyInput,
 ):
-    balance = non_negative(current_balance, name="current balance")
+    # A simulation must be able to continue from a projected negative balance
+    # so that an unaffordable purchase becomes a risk result instead of a 500.
+    balance = money(current_balance)
     purchase = non_negative(purchase_amount, name="purchase amount")
     return money(balance - purchase)
 

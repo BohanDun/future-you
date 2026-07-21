@@ -37,6 +37,7 @@ def test_goal_completion_months(
 def test_one_time_purchase_can_reveal_negative_balance() -> None:
     assert apply_one_time_purchase(8000, 2000) == Decimal("6000.00")
     assert apply_one_time_purchase(8000, 9000) == Decimal("-1000.00")
+    assert apply_one_time_purchase(-1000, 2000) == Decimal("-3000.00")
 
 
 @pytest.mark.parametrize(
