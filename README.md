@@ -1,233 +1,254 @@
 # Future You
 
-Future You is a financial what-if simulator with a React frontend, a FastAPI
-backend, and a standalone AI agent module. It can run locally with mock
-customer data, or use AWS DynamoDB and Amazon Bedrock through environment
-configuration.
+Future You is an AI-powered financial planning dashboard that helps people explore
+long-term what-if scenarios, manage savings goals, and understand how today's
+financial decisions may affect their future.
 
-**Core principle:** the AI agent understands and explains. The financial tools
-calculate. Bedrock never invents money or goal outcomes.
+It combines a financial dashboard with two agent experiences:
 
-## How to use
+- **Advice mode** answers financial wellbeing questions and runs grounded simulations.
+- **Manage mode** prepares reviewable changes to goals and profile data, then waits for
+  explicit confirmation before saving anything.
 
-### Quick start (full stack)
+The application can run entirely with local demo data or use Amazon Cognito,
+DynamoDB, Amazon Bedrock, API Gateway, and AWS Lambda.
 
-You need **two terminals** — one for the backend, one for the frontend.
+> **Core principle:** Bedrock understands and explains. The deterministic financial
+> engine calculates. The language model never invents balances, cash flow, risk levels,
+> or goal outcomes.
 
-**Terminal 1 — backend + agent**
+<!-- Add the final dashboard image at docs/images/future-you-dashboard.png. -->
+<!-- ![Future You dashboard](docs/images/future-you-dashboard.png) -->
 
-```bash
-cd backend
-python -m venv .venv
-# Windows PowerShell: .\.venv\Scripts\Activate.ps1
-# macOS/Linux:
-source .venv/bin/activate
-pip install -r requirements.txt
+## Key Features
 
-# Required so Python can import the top-level agent/ package:
-export PYTHONPATH="/path/to/future-you-main/backend:/path/to/future-you-main"
+- Financial dashboard with balance, income, expenses, monthly savings, goals, and
+  spending insights
+- Long-term what-if simulations for purchases, recurring expenses, and extra savings
+- Before-and-after comparisons covering cash flow, goal timing, and financial risk
+- Advice mode with grounded follow-up questions and practical explanations
+- Manage mode with signed proposals and explicit user confirmation
+- Goal and spending-category management
+- Amazon Cognito authentication and first-time onboarding
+- DynamoDB-backed profile persistence
+- Amazon Bedrock integration with a reliable mock fallback
+- Deterministic Python calculations with automated tests
 
-# Mock mode — no API key needed (good for offline dev and tests):
-export AI_MODE=mock
+## How It Works
 
-uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
-```
+1. The customer reviews their dashboard and asks a question in natural language.
+2. The AI agent classifies the request and extracts a structured scenario.
+3. The backend loads the customer's profile and goals.
+4. The financial engine calculates the exact result and risk level.
+5. The AI explains the verified result without changing its numbers.
+6. The frontend displays the response and, when applicable, a before-and-after panel.
 
-Replace `/path/to/future-you-main` with your actual repo path.
-
-**Terminal 2 — frontend**
-
-```bash
-cd frontend
-npm install
-cp .env.example .env.local   # Windows: Copy-Item .env.example .env.local
-npm run dev
-```
-
-Open **http://127.0.0.1:5173** in your browser.
-
-Make sure `frontend/.env.local` points at the backend:
-
-```env
-VITE_API_URL=http://127.0.0.1:8000
-```
-
-### Using the chat
-
-The demo customer is **Alex**. In the **Ask Future You** chat you can ask:
-
-**What-if questions (runs a simulation + shows numbers below the chat)**
+Example questions:
 
 - `What happens if I buy a $2,000 laptop?`
 - `What if my rent increases by $100 per week?`
 - `What if I save an extra $50 per week for my emergency fund?`
-- `Should I buy a laptop?` — uses a reasonable estimated price when no amount is given
-
-**General money questions (free-form coach reply — no simulation panel)**
-
-- `I want to buy stocks, do you have any recommendations?`
-- `I want to open a bank account, how do I do that?`
 - `How should I budget better?`
 
-The agent acts as a financial wellbeing coach: warm, practical, and grounded in
-Alex's profile (balance, savings, goals). For what-if questions it uses exact
-numbers from the calculation engine — it does not invent figures.
+Advice mode supports follow-up questions during the current page session. Manage mode
+can collect goal details across several messages and create a signed preview. Changes
+are saved only after the customer confirms that preview.
 
-Advice supports follow-up questions within the current page session. For example,
-after modelling a laptop purchase, `What about two months later?` keeps the laptop
-scenario and changes only its timing. Conversation history is not yet persisted after
-a refresh.
+## Architecture
 
-Manage mode creates reviewable profile and goal proposals. It can collect a goal name,
-target, saved amount, and monthly contribution across multiple messages. Nothing is
-saved until the customer confirms the signed preview.
-
-### Live AI with Amazon Bedrock (optional)
-
-To use the real Bedrock model instead of mock responses:
-
-```bash
-export PYTHONPATH="/path/to/future-you-main/backend:/path/to/future-you-main"
-export AI_MODE=bedrock
-export AWS_REGION_NAME=ap-southeast-2
-export BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
-
-# Recommended for local development: an authenticated AWS SSO/profile session.
-export AWS_PROFILE=future-you
-# Alternatively, export your own Bedrock API key in AWS_BEARER_TOKEN_BEDROCK.
-
-uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```mermaid
+flowchart TD
+    UI[React + TypeScript frontend] --> APIGW[Amazon API Gateway]
+    APIGW --> API[FastAPI on AWS Lambda]
+    API --> DDB[(Amazon DynamoDB)]
+    API --> AGENT[AI Agent]
+    AGENT --> BEDROCK[Amazon Bedrock]
+    AGENT --> ENGINE[Deterministic Financial Engine]
+    ENGINE --> API
+    API --> UI
 ```
 
-The client uses boto3's standard credential chain, so SSO profiles, environment
-credentials, Lambda roles, and Bedrock API keys are supported. Never commit keys
-or tokens, paste them into README files, or check them into tracked `.env` files.
+The same application can run locally without AWS. In mock mode, the backend uses the
+synthetic Alex profile and deterministic agent fallbacks while preserving the same API
+and calculation flow.
 
-Smoke-test Bedrock connectivity:
+## Technology Stack
 
-```bash
-cd backend && source .venv/bin/activate
-export AWS_PROFILE=future-you
-export PYTHONPATH="../:."
-python -m agent.scripts.test_bedrock
-```
+| Layer | Technologies |
+|---|---|
+| Frontend | React, TypeScript, Vite, Material UI, Recharts, AWS Amplify |
+| API | FastAPI, Pydantic, Mangum, AWS Lambda, API Gateway |
+| AI agent | Amazon Bedrock Converse API, boto3, deterministic fallbacks |
+| Financial engine | Python, `Decimal`, rule-based risk assessment |
+| Authentication | Amazon Cognito or local mock identity |
+| Data | Amazon DynamoDB or local JSON/CSV demo data |
+| Quality | pytest, Ruff, ESLint, TypeScript |
 
-Default model: `amazon.nova-lite-v1:0` in `ap-southeast-2`.
+## Local Development
 
-## Project structure
+### Prerequisites
 
-```text
-future-you/
-├── agent/                    Person 4 — AI agent (Bedrock + prompts + fallback)
-│   ├── service.py            Public API: parse, explain, coach routing
-│   ├── coach.py              Free-form financial coaching (non-simulation)
-│   ├── bedrock_client.py     Amazon Bedrock Converse client
-│   ├── question_parser.py    Natural-language question → ParsedScenario
-│   ├── explainer.py          Simulation result → plain-language explanation
-│   ├── scenario_parser.py    Mock parser fallback
-│   ├── prompts.py            System prompts for understanding and explanation
-│   ├── scripts/              Bedrock connectivity smoke test
-│   └── tests/                Agent unit tests + virtual user fixtures
-├── frontend/                 React, TypeScript and Vite application
-│   ├── src/
-│   │   ├── components/       Dashboard, chat and simulation UI
-│   │   ├── data/             Local mock customer data
-│   │   ├── lib/              API client and shared frontend types
-│   │   └── theme/            Material UI theme
-│   ├── .env.example
-│   ├── package.json
-│   └── vite.config.ts
-├── backend/                  FastAPI application and Lambda entry point
-│   ├── app/
-│   │   ├── financial_tools/  Person 2 — deterministic calculation engine
-│   │   ├── models/           Pydantic request and response models
-│   │   ├── services/         Customer and simulation services
-│   │   ├── lambda_handler.py
-│   │   └── main.py           Imports the agent via `from agent import ...`
-│   ├── data/                 Synthetic customer and transaction data
-│   ├── tests/
-│   ├── .env.example
-│   └── requirements.txt
-└── README.md
-```
+- Python 3.12
+- Node.js 20 or later
+- npm
+- Two terminal windows
+- AWS credentials only when using AWS mode
 
-Customer login, first-time onboarding, and DynamoDB profile setup are described
-in [`docs/AWS_AUTH_SETUP.md`](docs/AWS_AUTH_SETUP.md).
+### Runtime Modes
 
-## Run locally
+| Mode | Authentication | Data | AI |
+|---|---|---|---|
+| Local mock | Mock | Local demo data | Mock |
+| Local with AWS | Cognito | DynamoDB | Bedrock |
+| Cloud deployment | Cognito | DynamoDB | Bedrock |
 
-See **How to use** above for the recommended step-by-step setup. Summary:
+### Backend Setup
 
-### Backend + Agent
+From the repository root:
 
 ```bash
 cd backend
-source .venv/bin/activate          # or create venv first — see Quick start
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 export PYTHONPATH="../:."
-export AI_MODE=mock                # or bedrock — see below
-uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-The API runs at <http://127.0.0.1:8000>. Interactive documentation is at
-<http://127.0.0.1:8000/docs>.
+On Windows PowerShell, activate the environment with:
 
-Mock mode (no Bedrock calls — good for offline development and CI):
-
-```env
-AI_MODE=mock
-DATA_SOURCE=mock
+```powershell
+.\.venv\Scripts\Activate.ps1
 ```
 
-Live Bedrock mode using an authenticated AWS profile:
+### Mock Mode
+
+Mock mode requires no AWS account or API key:
 
 ```bash
+cd backend
+source .venv/bin/activate
 export PYTHONPATH="../:."
-export AWS_PROFILE=future-you
-export AI_MODE=bedrock
-export BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
-export AWS_REGION_NAME=ap-southeast-2
+export AUTH_MODE=mock
+export DATA_SOURCE=mock
+export AI_MODE=mock
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
-You can alternatively export `AWS_BEARER_TOKEN_BEDROCK`. Do not commit API keys
-or temporary credentials. See `agent/.env.example` for agent-specific variables.
-
-### Frontend
+The API is available at <http://127.0.0.1:8000>, with interactive documentation at
+<http://127.0.0.1:8000/docs>.
 
 In a second terminal:
 
 ```bash
 cd frontend
 npm install
-# Windows PowerShell: Copy-Item .env.example .env.local
-# macOS/Linux: cp .env.example .env.local
+cp .env.example .env.local
 npm run dev
 ```
 
-The frontend runs at <http://localhost:5173>. Set `VITE_API_URL` in
-`frontend/.env.local` to the local backend or the deployed API Gateway base
-URL. Advice and Manage modes intentionally require the backend so every simulation uses
-the same deterministic calculation engine.
-
-Example `frontend/.env.local`:
+Set `frontend/.env.local` to:
 
 ```env
 VITE_API_URL=http://127.0.0.1:8000
+VITE_AUTH_MODE=mock
 ```
+
+Open <http://127.0.0.1:5173>.
+
+### AWS Mode
+
+Configure Cognito and DynamoDB by following
+[`docs/AWS_AUTH_SETUP.md`](docs/AWS_AUTH_SETUP.md), then start the backend with:
+
+```bash
+cd backend
+source .venv/bin/activate
+export PYTHONPATH="../:."
+export AUTH_MODE=cognito
+export DATA_SOURCE=dynamodb
+export AI_MODE=bedrock
+export AWS_REGION_NAME=ap-southeast-2
+export AWS_PROFILE=future-you
+export COGNITO_USER_POOL_ID=your-user-pool-id
+export COGNITO_APP_CLIENT_ID=your-app-client-id
+export CUSTOMER_TABLE_NAME=future-you-users
+export BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
+export AGENT_PROPOSAL_SIGNING_KEY=replace-with-a-long-random-secret
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+The Bedrock client uses boto3's standard credential chain. An AWS SSO/profile session,
+Lambda execution role, or `AWS_BEARER_TOKEN_BEDROCK` can provide credentials. Never
+commit credentials, tokens, signing keys, or populated `.env` files.
+
+Configure the frontend:
+
+```env
+VITE_API_URL=http://127.0.0.1:8000
+VITE_AUTH_MODE=cognito
+VITE_COGNITO_USER_POOL_ID=your-user-pool-id
+VITE_COGNITO_USER_POOL_CLIENT_ID=your-app-client-id
+```
+
+To verify Bedrock connectivity:
+
+```bash
+cd backend
+source .venv/bin/activate
+export PYTHONPATH="../:."
+export AWS_PROFILE=future-you
+python -m agent.scripts.test_bedrock
+```
+
+## Environment Variables
+
+### Backend and Agent
+
+| Variable | Purpose | Typical value |
+|---|---|---|
+| `AUTH_MODE` | Select authentication provider | `mock` or `cognito` |
+| `DATA_SOURCE` | Select profile storage | `mock` or `dynamodb` |
+| `AI_MODE` | Select agent implementation | `mock` or `bedrock` |
+| `AWS_REGION_NAME` | AWS region for Cognito, DynamoDB, and Bedrock | `ap-southeast-2` |
+| `AWS_PROFILE` | Optional local AWS CLI/SSO profile | `future-you` |
+| `COGNITO_USER_POOL_ID` | Cognito user pool used to validate tokens | AWS resource ID |
+| `COGNITO_APP_CLIENT_ID` | Cognito application client | AWS resource ID |
+| `CUSTOMER_TABLE_NAME` | DynamoDB profile table | `future-you-users` |
+| `BEDROCK_MODEL_ID` | Bedrock model used by the agent | `amazon.nova-lite-v1:0` |
+| `AGENT_PROPOSAL_SIGNING_KEY` | Signs Manage-mode proposals | Long random secret |
+| `FUTURE_YOU_DATA_DIR` | Optional local demo-data override | Directory path |
+
+### Frontend
+
+| Variable | Purpose |
+|---|---|
+| `VITE_API_URL` | FastAPI or API Gateway base URL |
+| `VITE_AUTH_MODE` | `mock` or `cognito` |
+| `VITE_COGNITO_USER_POOL_ID` | Cognito user pool ID |
+| `VITE_COGNITO_USER_POOL_CLIENT_ID` | Cognito application client ID |
+
+See `backend/.env.example`, `agent/.env.example`, and `frontend/.env.example` for
+copyable templates.
 
 ## API
 
-- `GET /health` checks backend availability.
-- `GET /customer/{customer_id}` returns a customer profile.
-- `GET /me/profile` returns the authenticated user's profile.
-- `PUT /me/profile` completes onboarding or replaces the authenticated profile.
-- `POST /me/goals` and `DELETE /me/goals/{goal_id}` manage goals manually.
-- `PUT /me/spending-categories` updates categories, monthly expenses, and savings together.
-- `POST /simulate` parses a financial question and returns the simulation.
-- `POST /agent/manage` prepares a reviewable Manage proposal.
-- `POST /agent/proposals/apply` verifies and applies a signed proposal.
+Authentication is required when `AUTH_MODE=cognito`. Mock mode supplies a local demo
+identity automatically.
 
-Example request:
+| Method | Endpoint | Purpose | Authentication |
+|---|---|---|---|
+| `GET` | `/health` | Check API health | No |
+| `GET` | `/customer/{customer_id}` | Load a customer in mock mode | Mock only |
+| `GET` | `/me/profile` | Load the current user's profile | Yes |
+| `PUT` | `/me/profile` | Complete onboarding or replace the profile | Yes |
+| `POST` | `/me/goals` | Add a savings goal | Yes |
+| `DELETE` | `/me/goals/{goal_id}` | Delete a savings goal | Yes |
+| `PUT` | `/me/spending-categories` | Update spending categories and derived savings | Yes |
+| `POST` | `/simulate` | Run Advice mode or a what-if simulation | Yes |
+| `POST` | `/agent/manage` | Prepare a reviewable Manage proposal | Yes |
+| `POST` | `/agent/proposals/apply` | Verify and apply a confirmed proposal | Yes |
+
+Example simulation request:
 
 ```json
 {
@@ -236,118 +257,121 @@ Example request:
 }
 ```
 
-Example flow:
+For general coaching questions, `/simulate` returns `result: null`; the frontend shows
+the explanation without opening the comparison panel.
 
-```text
-Customer question
-    → agent parses scenario (Bedrock or mock fallback)
-    → if what-if with an amount: backend runs financial tools → agent explains numbers
-    → if general money question: agent coach replies from profile (no simulation)
-    → JSON response returned to frontend
-```
+## Testing
 
-`POST /simulate` returns `result: null` for coach-only replies; the frontend
-shows the explanation in chat without the comparison panel.
-
-## Verification
+Run the frontend checks:
 
 ```bash
 cd frontend
 npm run lint
 npm run build
+```
 
-cd ../backend
+Run backend and agent checks:
+
+```bash
+cd backend
+source .venv/bin/activate
 python -m ruff check . ../agent
 python -m pytest
-python -m pytest ../agent/tests -q
 ```
 
-Frontend production files are generated in `frontend/dist/`. Backend Lambda
-artifacts under `backend/build/` and `backend/future-you-backend.zip` are not
-committed.
+Tests cover API behaviour, authentication, profile operations, deterministic financial
+calculations, risk assessment, Advice and Manage routing, Bedrock responses, fallbacks,
+and profile-specific virtual users.
 
-## Person 4 — AI agent
+## AWS Deployment
 
-The agent lives in the top-level `agent/` folder and is imported by the backend
-API. It has four jobs:
+The cloud path is:
 
-1. **Understand the question** — convert natural language into a structured
-   `ParsedScenario` (`scenarioType`, `amount`, `frequency`, `description`,
-   `goalId`).
-2. **Explain the result** — turn the calculated simulation output into a short,
-   supportive answer without changing any numbers.
-3. **Coach freely** — answer general money questions (investing basics, bank
-   accounts, budgeting) when the question is not a numeric what-if.
-4. **Plan safe changes** — collect Manage fields across turns and produce signed,
-   reviewable operations without applying them directly.
-
-### Key files
-
-| File | Purpose |
-|------|---------|
-| `agent/service.py` | Public entry point; routes simulation vs coach |
-| `agent/advice.py` | Model-first Advice routing with grounded follow-up fallback |
-| `agent/coach.py` | Free-form Bedrock coaching for non-simulation questions |
-| `agent/manager.py` | Multi-turn Manage drafts and Bedrock tool calls |
-| `agent/manage_policy.py` | Unsupported-action and proposal consistency boundary |
-| `agent/prompts.py` | Bedrock system prompts |
-| `agent/bedrock_client.py` | Calls `bedrock-runtime` Converse API |
-| `agent/scenario_parser.py` | Mock parser used when `AI_MODE=mock` or Bedrock fails |
-| `agent/fallback.py` | Mock explanations and coach replies |
-
-### Bedrock smoke test
-
-Use an authenticated AWS SSO/profile session:
-
-```bash
-cd backend && source .venv/bin/activate
-export AWS_PROFILE=future-you
-export PYTHONPATH="../:."
-python -m agent.scripts.test_bedrock
+```text
+React application
+    → Amazon API Gateway
+    → FastAPI through Mangum on AWS Lambda
+    → Amazon Cognito, DynamoDB, and Amazon Bedrock
 ```
 
-Alternatively, export your own `AWS_BEARER_TOKEN_BEDROCK` before running the
-same command. Never commit API keys or temporary AWS credentials.
+- Follow [`docs/AWS_AUTH_SETUP.md`](docs/AWS_AUTH_SETUP.md) for Cognito, DynamoDB,
+  permissions, frontend configuration, and route protection.
+- Use `backend/requirements-lambda.txt` when assembling the Lambda layer or deployment
+  package.
+- The Lambda entry point is `app.lambda_handler.handler`.
+- Include both `backend/app/` and the top-level `agent/` package in the deployment
+  artifact.
+- Point `VITE_API_URL` at the deployed API Gateway base URL.
+- Grant the Lambda execution role only the required DynamoDB and Bedrock permissions,
+  and use CloudWatch for runtime logs.
 
-Model default: `amazon.nova-lite-v1:0` in `ap-southeast-2`.
+Generated Lambda artifacts under `backend/build/` and
+`backend/future-you-backend.zip` are intentionally not committed.
 
-### Agent tests
+## Project Structure
 
-Agent tests include virtual users (`Sam`, `Jordan`, `Riley`) under
-`agent/tests/fixtures/virtual_users.py` for profile-specific risk and goal
-behaviour checks.
-
-```bash
-cd backend && source .venv/bin/activate
-python -m pytest ../agent/tests -q
+```text
+future-you/
+├── agent/                         AI understanding, coaching, explanations, and safety
+│   ├── advice.py                  Advice routing and grounded follow-ups
+│   ├── manager.py                 Multi-turn Manage proposals
+│   ├── manage_policy.py           Unsupported-action and proposal safety boundary
+│   ├── bedrock_client.py          Amazon Bedrock Converse client
+│   ├── scenario_parser.py         Deterministic mock parser and fallback
+│   └── tests/                     Agent and virtual-user tests
+├── backend/
+│   ├── app/
+│   │   ├── financial_tools/       Deterministic calculation engine
+│   │   ├── models/                Pydantic request and response models
+│   │   ├── services/              Auth, profile, simulation, and proposal services
+│   │   ├── lambda_handler.py      AWS Lambda adapter
+│   │   └── main.py                FastAPI routes
+│   ├── data/                      Synthetic customer and transaction data
+│   ├── tests/                     Backend and calculation tests
+│   └── requirements-lambda.txt    Lambda deployment dependencies
+├── frontend/
+│   └── src/
+│       ├── components/            Dashboard, authentication, chat, and simulation UI
+│       ├── context/               Authentication state
+│       ├── data/                  Local demo customer
+│       └── lib/                   API, auth, formatting, and frontend types
+├── docs/
+│   └── AWS_AUTH_SETUP.md          Cognito and DynamoDB configuration
+└── README.md
 ```
 
-## Person 2 — financial engine
+The AI Agent is responsible for intent, conversation, and clear explanations. The
+Financial Engine is responsible for all balances, monthly cash flow, goal projections,
+recommendations, and risk classifications.
 
-The deterministic financial engine is in `backend/app/financial_tools/`. Synthetic
-customer and transaction data live in `backend/data/`. The engine calculates
-all money and goal outcomes before Bedrock receives the result, so the AI does
-not invent financial figures.
+## Security and Design Principles
 
-See `backend/app/financial_tools/README.md` for formulas, risk thresholds, allocation
-assumptions, and the verified demo outcomes.
+- Manage mode never writes directly; it creates a signed proposal that the user must
+  review and confirm.
+- The agent cannot transfer money, make payments, trade investments, close accounts,
+  or perform other irreversible banking actions.
+- Bedrock does not calculate or alter financial values. Explanations are grounded in
+  verified engine output, with deterministic fallbacks when validation fails.
+- Cognito JWTs protect user-specific routes in AWS mode, and the backend—not the
+  browser—accesses DynamoDB.
+- Secrets and AWS credentials belong in the runtime environment or a managed secret
+  store, never in source control.
+- Future You provides educational financial wellbeing guidance, not personalised
+  professional financial advice.
 
-### Current calculation boundary
+## Current Limitations
 
-The verified engine supports one-time purchases, recurring expense increases, and
-additional savings. It does not yet model interest, debt amortisation, investment returns,
-tax, inflation, or arbitrary transaction execution. Advice may discuss those topics at a
-general educational level, but it must not display a numeric simulation dashboard for an
-unsupported calculation.
+- Conversation history lasts only for the current page session.
+- The simulation engine currently supports one-time purchases, recurring expense
+  changes, and additional savings.
+- It does not model tax, inflation, investment returns, debt interest or amortisation,
+  exchange-rate movements, or full mortgage and KiwiSaver products.
+- The prototype uses synthetic customer and transaction data; it does not connect to a
+  real bank account.
+- General educational answers may discuss unsupported topics, but the app does not show
+  a numeric simulation panel for calculations outside the verified engine boundary.
 
-## Team integration notes
+## License
 
-| Part | Owner | Backend touchpoint |
-|------|-------|-------------------|
-| Frontend | Person 1 | Calls `POST /simulate` via `frontend/src/lib/api.ts` |
-| Financial tools | Person 2 | `backend/app/financial_tools/` + `backend/data/` |
-| Backend / AWS | Person 3 | `backend/app/main.py`, Lambda, API Gateway |
-| AI agent | Person 4 | `agent/` imported in `backend/app/main.py` |
-
-When deploying Lambda, include both `backend/app/` and the top-level `agent/`
-package in the deployment artifact, with the repo root on `PYTHONPATH`.
+No open-source license has been added yet. Until one is provided, all rights are
+reserved by the project authors.
