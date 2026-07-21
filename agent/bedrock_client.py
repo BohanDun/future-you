@@ -1,5 +1,4 @@
 import logging
-import os
 from functools import lru_cache
 
 import boto3
@@ -11,12 +10,11 @@ logger = logging.getLogger(__name__)
 
 @lru_cache(maxsize=1)
 def _runtime_client():
-    if not os.getenv("AWS_BEARER_TOKEN_BEDROCK"):
-        raise RuntimeError(
-            "AWS_BEARER_TOKEN_BEDROCK is not set. "
-            "Export your Bedrock API key before starting the backend."
-        )
+    """Create a Bedrock client using boto3's standard credential chain.
 
+    This supports Bedrock API keys, AWS profiles and SSO, environment
+    credentials, instance roles, and Lambda execution roles.
+    """
     return boto3.client(
         service_name="bedrock-runtime",
         region_name=AWS_REGION,
@@ -56,3 +54,24 @@ def invoke_bedrock(
         raise ValueError("Bedrock returned no text content")
 
     return "".join(text_parts).strip()
+
+
+def invoke_bedrock_with_tools(
+    *,
+    system_prompt: str,
+    messages: list[dict],
+    tools: list[dict],
+    max_tokens: int = 700,
+    temperature: float = 0.1,
+) -> list[dict]:
+    response = _runtime_client().converse(
+        modelId=BEDROCK_MODEL_ID,
+        system=[{"text": system_prompt}],
+        messages=messages,
+        toolConfig={"tools": tools},
+        inferenceConfig={
+            "maxTokens": max_tokens,
+            "temperature": temperature,
+        },
+    )
+    return response["output"]["message"]["content"]

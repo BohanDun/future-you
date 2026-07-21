@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Skeleton, Stack, Typography } from '@mui/material';
 import { colors } from '../../theme/theme';
-import type { CustomerProfile } from '../../data/mockCustomer';
+import type { CustomerProfile, Goal } from '../../data/mockCustomer';
 import { SummaryCards } from './SummaryCards';
 import { GoalCards } from './GoalCards';
 
@@ -9,7 +9,19 @@ const SpendingChart = lazy(() =>
   import('./SpendingChart').then((module) => ({ default: module.SpendingChart })),
 );
 
-export function DashboardSection({ profile }: { profile: CustomerProfile }) {
+interface Props {
+  profile: CustomerProfile;
+  onAddGoal?: (goal: Goal) => Promise<void>;
+  onDeleteGoal?: (goalId: string) => Promise<void>;
+  onSaveSpending?: (categories: Record<string, number>) => Promise<void>;
+}
+
+export function DashboardSection({
+  profile,
+  onAddGoal,
+  onDeleteGoal,
+  onSaveSpending,
+}: Props) {
   return (
     <Stack spacing={3}>
       <Stack spacing={0.5}>
@@ -20,9 +32,13 @@ export function DashboardSection({ profile }: { profile: CustomerProfile }) {
       </Stack>
 
       <SummaryCards profile={profile} />
-      <GoalCards goals={profile.goals} />
+      <GoalCards
+        goals={profile.goals}
+        onAddGoal={onAddGoal}
+        onDeleteGoal={onDeleteGoal}
+      />
       <Suspense fallback={<Skeleton variant="rounded" height={344} />}>
-        <SpendingChart profile={profile} />
+        <SpendingChart profile={profile} onSaveSpending={onSaveSpending} />
       </Suspense>
     </Stack>
   );

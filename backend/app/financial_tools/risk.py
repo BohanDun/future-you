@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Literal
 
-from app.financial.money import MoneyInput, as_decimal, non_negative
+from app.financial_tools.money import MoneyInput, as_decimal, non_negative
 
 RiskLevel = Literal["Low", "Medium", "High"]
 
@@ -22,6 +22,7 @@ def assess_financial_risk(
     available_balance_after: MoneyInput,
     monthly_expenses: MoneyInput,
     max_goal_delay_months: int = 0,
+    minimum_projected_balance: MoneyInput | None = None,
 ) -> RiskAssessment:
     """Classify risk using cash flow, reserve coverage, and goal delay.
 
@@ -42,6 +43,12 @@ def assess_financial_risk(
         high_reasons.append("Monthly cash flow becomes negative.")
     if balance < 0:
         high_reasons.append("Available balance becomes negative.")
+    if (
+        minimum_projected_balance is not None
+        and as_decimal(minimum_projected_balance) < 0
+        and balance >= 0
+    ):
+        high_reasons.append("Available balance becomes negative during the projection.")
     if expenses > 0 and balance < expenses:
         high_reasons.append("Available balance covers less than one month of expenses.")
     if max_goal_delay_months >= 999:

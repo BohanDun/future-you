@@ -1,13 +1,15 @@
 from datetime import date
 from typing import Literal, Self
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class FinancialGoal(BaseModel):
-    goalId: str
-    name: str
-    target: float = Field(ge=0)
+    model_config = ConfigDict(allow_inf_nan=False, str_strip_whitespace=True)
+
+    goalId: str = Field(min_length=1, max_length=100)
+    name: str = Field(min_length=1, max_length=80)
+    target: float = Field(gt=0)
     current: float = Field(ge=0)
     monthlyContribution: float = Field(ge=0)
 
@@ -25,6 +27,7 @@ class Transaction(BaseModel):
 class CustomerProfile(BaseModel):
     customerId: str
     name: str
+    currency: str = Field(default="NZD", min_length=3, max_length=3)
 
     currentBalance: float = Field(ge=0)
     monthlyIncome: float = Field(ge=0)

@@ -1,5 +1,6 @@
 """Fill in missing scenario details using sensible demo defaults."""
 
+from agent.scenario_parser import extract_horizon
 from app.models.scenario import ParsedScenario
 
 _PURCHASE_DEFAULTS: dict[str, float] = {
@@ -52,6 +53,13 @@ def _estimated_label(description: str | None, amount: float) -> str:
 
 
 def enrich_scenario(question: str, scenario: ParsedScenario) -> ParsedScenario:
+    if scenario.horizonMonths == 0:
+        horizon_months, timing_label = extract_horizon(_normalize(question))
+        if horizon_months:
+            scenario = scenario.model_copy(update={
+                "horizonMonths": horizon_months,
+                "timingLabel": scenario.timingLabel or timing_label,
+            })
     if scenario.amount is not None:
         return scenario
 

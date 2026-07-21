@@ -7,8 +7,8 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
-from app.financial import calculate_monthly_cash_flow, generate_dashboard_insights
-from app.financial.money import as_float
+from app.financial_tools import calculate_monthly_cash_flow, generate_dashboard_insights
+from app.financial_tools.money import as_float
 from app.models.customer import CustomerProfile, Transaction
 
 DEFAULT_DATA_ROOT = Path(__file__).resolve().parents[2] / "data"

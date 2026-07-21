@@ -2,7 +2,7 @@
 
 from decimal import ROUND_HALF_UP, Decimal
 
-from app.financial.money import MoneyInput, as_decimal
+from app.financial_tools.money import MoneyInput, as_decimal
 
 
 def _trend_insight(

@@ -14,6 +14,8 @@ export interface ParsedScenario {
   amount: number;
   description: string;
   goalId?: string;
+  horizonMonths?: number;
+  timingLabel?: string;
 }
 
 export type RiskLevel = 'Low' | 'Medium' | 'High';
@@ -23,11 +25,13 @@ export interface GoalOutcome {
   goalName: string;
   monthsBefore: number;
   monthsAfter: number;
+  currentAtEvent?: number;
 }
 
 export interface SimulationResult {
   balanceBefore: number;
   balanceAfter: number;
+  balanceAtEventBefore?: number;
   monthlySavingsBefore: number;
   monthlySavingsAfter: number;
   goals: GoalOutcome[];
@@ -36,6 +40,10 @@ export interface SimulationResult {
   riskReasons: string[];
   recommendation: string;
   scenario: ParsedScenario;
+  goalContributionsByEvent?: number;
+  fundedFromGoal?: number;
+  fundedFromBalance?: number;
+  eventRisk?: RiskLevel;
 }
 
 function roundMoney(value: number): number {
@@ -49,7 +57,11 @@ function monthsToGoal(goal: Goal, contribution: number, current = goal.current):
   return Math.ceil(remaining / contribution);
 }
 
-function primaryGoalIndex(profile: CustomerProfile, scenario: ParsedScenario): number {
+function primaryGoalIndex(
+  profile: CustomerProfile,
+  scenario: ParsedScenario,
+  useDefault = true,
+): number {
   const goalIdMap: Record<string, string> = {
     house_deposit: 'house',
     japan_holiday: 'japan',
@@ -62,13 +74,13 @@ function primaryGoalIndex(profile: CustomerProfile, scenario: ParsedScenario): n
   }
 
   const description = scenario.description.toLowerCase();
-  const aliases = /japan|holiday|trip/.test(description)
-    ? 'japan'
-    : /emergency/.test(description)
-      ? 'emergency'
-      : 'house';
-  const index = profile.goals.findIndex((goal) => goal.id === aliases);
-  return index >= 0 ? index : 0;
+  const index = profile.goals.findIndex((goal) => (
+    description.includes(goal.name.toLowerCase())
+    || goal.name.toLowerCase().split(/\s+/).some((word) => (
+      word.length >= 4 && description.includes(word)
+    ))
+  ));
+  return index >= 0 ? index : useDefault && profile.goals.length ? 0 : -1;
 }
 
 function maxGoalDelay(goals: GoalOutcome[]): number {
@@ -135,6 +147,12 @@ function makeResult(
   balanceAfter: number,
   cashFlowAfter: number,
   goals: GoalOutcome[],
+  projection?: {
+    balanceAtEventBefore: number;
+    goalContributionsByEvent: number;
+    fundedFromGoal: number;
+    fundedFromBalance: number;
+  },
 ): SimulationResult {
   const delay = maxGoalDelay(goals);
   const riskBefore = assessRisk(
@@ -162,6 +180,7 @@ function makeResult(
     riskReasons: riskAfter.reasons,
     recommendation: recommendation(scenario, riskAfter.level, delay),
     scenario,
+    ...projection,
   };
 }
 
@@ -169,24 +188,44 @@ function simulateOneOffPurchase(
   profile: CustomerProfile,
   scenario: ParsedScenario,
 ): SimulationResult {
-  const primaryIndex = primaryGoalIndex(profile, scenario);
-  const goals = profile.goals.map((goal, index) => {
-    const currentAfter = index === primaryIndex
-      ? Math.max(goal.current - scenario.amount, 0)
-      : goal.current;
-    return {
-      goalId: goal.id,
-      goalName: goal.name,
-      monthsBefore: monthsToGoal(goal, goal.monthlyContribution),
-      monthsAfter: monthsToGoal(goal, goal.monthlyContribution, currentAfter),
-    };
-  });
+  const horizon = scenario.horizonMonths ?? 0;
+  const projectedGoals = profile.goals.map((goal) => goal.current);
+  let projectedBalance = profile.balance;
+  let totalContributions = 0;
+  for (let month = 0; month < horizon; month += 1) {
+    projectedBalance += profile.monthlySavings;
+    profile.goals.forEach((goal, index) => {
+      const remaining = Math.max(goal.target - projectedGoals[index], 0);
+      const contribution = Math.min(goal.monthlyContribution, remaining);
+      projectedGoals[index] += contribution;
+      projectedBalance -= contribution;
+      totalContributions += contribution;
+    });
+  }
+  const primaryIndex = primaryGoalIndex(profile, scenario, false);
+  const fundedFromGoal = primaryIndex >= 0
+    ? Math.min(projectedGoals[primaryIndex], scenario.amount)
+    : 0;
+  const fundedFromBalance = scenario.amount - fundedFromGoal;
+  const goals = profile.goals.map((goal, index) => ({
+    goalId: goal.id,
+    goalName: goal.name,
+    monthsBefore: monthsToGoal(goal, goal.monthlyContribution),
+    monthsAfter: monthsToGoal(goal, goal.monthlyContribution),
+    currentAtEvent: projectedGoals[index],
+  }));
   return makeResult(
     profile,
     scenario,
-    profile.balance - scenario.amount,
+    projectedBalance - fundedFromBalance,
     profile.monthlySavings,
     goals,
+    {
+      balanceAtEventBefore: projectedBalance,
+      goalContributionsByEvent: totalContributions,
+      fundedFromGoal,
+      fundedFromBalance,
+    },
   );
 }
 

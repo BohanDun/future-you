@@ -1,7 +1,12 @@
-import { Box, Container, Stack, Typography } from '@mui/material';
+import { Box, Button, Container, Stack, Typography } from '@mui/material';
 import { colors } from '../../theme/theme';
 
-export function Header() {
+interface HeaderProps {
+  userName?: string;
+  onLogout?: () => Promise<void>;
+}
+
+export function Header({ userName, onLogout }: HeaderProps) {
   return (
     <Box
       component="header"
@@ -30,12 +35,19 @@ export function Header() {
               Future You
             </Typography>
           </Stack>
-          <Typography
-            variant="body2"
-            sx={{ color: colors.inkSoft, display: { xs: 'none', sm: 'block' } }}
-          >
-            Most banks tell you what happened. Future You shows you what will happen.
-          </Typography>
+          {onLogout ? (
+            <Stack direction="row" spacing={1.5} alignItems="center">
+              {userName && <Typography variant="body2">Hi, {userName}</Typography>}
+              <Button color="inherit" onClick={() => void onLogout()}>Sign out</Button>
+            </Stack>
+          ) : (
+            <Typography
+              variant="body2"
+              sx={{ color: colors.inkSoft, display: { xs: 'none', sm: 'block' } }}
+            >
+              Most banks tell you what happened. Future You shows you what will happen.
+            </Typography>
+          )}
         </Stack>
       </Container>
     </Box>

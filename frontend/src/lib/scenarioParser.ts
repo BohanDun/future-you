@@ -5,9 +5,13 @@
 import type { ParsedScenario, ScenarioType } from './financialTools';
 
 function extractAmount(text: string): number {
-  const match = text.match(/\$?\s?(\d[\d,]*(?:\.\d+)?)/);
-  if (!match) return 0;
-  return parseFloat(match[1].replace(/,/g, ''));
+  const matches = text.matchAll(/\$?\s?(\d[\d,]*(?:\.\d+)?)/g);
+  for (const match of matches) {
+    const suffix = text.slice((match.index ?? 0) + match[0].length);
+    if (/^\s*(months?|years?)\b/i.test(suffix)) continue;
+    return parseFloat(match[1].replace(/,/g, ''));
+  }
+  return 0;
 }
 
 function extractDescription(text: string): string {
@@ -36,6 +40,17 @@ function extractGoalId(text: string): string | undefined {
   return undefined;
 }
 
+function extractHorizonMonths(text: string): number {
+  const lower = text.toLowerCase();
+  if (/\bnext month\b/.test(lower)) return 1;
+  if (/\bnext year\b/.test(lower)) return 12;
+  const months = lower.match(/\bin\s+(\d+)\s+months?\b/);
+  if (months) return Number.parseInt(months[1], 10);
+  const years = lower.match(/\bin\s+(\d+)\s+years?\b/);
+  if (years) return Number.parseInt(years[1], 10) * 12;
+  return 0;
+}
+
 export function parseQuestion(question: string): ParsedScenario {
   const lower = question.toLowerCase();
   const amount = extractAmount(question);
@@ -50,5 +65,11 @@ export function parseQuestion(question: string): ParsedScenario {
     scenarioType = 'one_off_purchase';
   }
 
-  return { scenarioType, amount, description, goalId: extractGoalId(question) };
+  return {
+    scenarioType,
+    amount,
+    description,
+    goalId: extractGoalId(question),
+    horizonMonths: extractHorizonMonths(question),
+  };
 }

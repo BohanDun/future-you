@@ -1,6 +1,7 @@
 import os
 
 os.environ["AI_MODE"] = "mock"
+os.environ["AGENT_PROPOSAL_SIGNING_KEY"] = "test-only-proposal-signing-key-32-chars"
 
 import pytest
 

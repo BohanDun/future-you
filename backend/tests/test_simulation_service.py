@@ -24,10 +24,112 @@ def test_laptop_purchase_demo(alex: CustomerProfile) -> None:
     assert result.before.balance == 8000
     assert result.after.balance == 6000
     assert result.before.monthlyCashFlow == result.after.monthlyCashFlow == 1350
-    assert (house.monthsBefore, house.monthsAfter) == (18, 20)
+    assert (house.monthsBefore, house.monthsAfter) == (18, 18)
     assert result.beforeRiskLevel == "Low"
     assert result.riskLevel == "Medium"
     assert result.recommendation.weeklyAmount == 40
+
+
+def test_future_purchase_projects_cash_flow_and_goal_contributions(alex) -> None:
+    result = run_simulation(
+        alex,
+        ParsedScenario(
+            scenarioType="one_off_purchase",
+            amount=3000,
+            frequency="one_time",
+            description="Japan trip",
+            goalId="japan_holiday",
+            horizonMonths=12,
+            timingLabel="next year",
+        ),
+    )
+
+    assert result.horizonMonths == 12
+    assert result.atEventBefore is not None
+    assert result.goalContributionsByEvent == 11_700
+    assert result.atEventBefore.balance == 12_500
+    assert result.fundedFromGoal == 3_000
+    assert result.fundedFromBalance == 0
+    assert result.after.balance == 12_500
+    assert result.riskLevel == "Low"
+
+
+def test_future_purchase_without_matching_goal_uses_projected_liquid_cash() -> None:
+    customer = CustomerProfile(
+        customerId="future-planner",
+        name="Future Planner",
+        currency="NZD",
+        currentBalance=1000,
+        monthlyIncome=6000,
+        monthlyExpenses=2700,
+        monthlySavings=3300,
+        goals=[
+            {
+                "goalId": "emergency_one",
+                "name": "Emergency Fund",
+                "target": 5000,
+                "current": 100,
+                "monthlyContribution": 250,
+            },
+            {
+                "goalId": "emergency_two",
+                "name": "Emergency Fund",
+                "target": 5000,
+                "current": 100,
+                "monthlyContribution": 300,
+            },
+        ],
+    )
+    result = run_simulation(
+        customer,
+        ParsedScenario(
+            scenarioType="one_off_purchase",
+            amount=3000,
+            frequency="one_time",
+            description="Trip to Japan",
+            horizonMonths=12,
+            timingLabel="next year",
+        ),
+    )
+
+    assert result.atEventBefore is not None
+    assert result.atEventBefore.balance == 34_000
+    assert result.after.balance == 31_000
+    assert result.fundedFromGoal == 0
+    assert result.riskLevel == "Low"
+
+
+def test_projection_flags_a_negative_balance_during_the_horizon() -> None:
+    customer = CustomerProfile(
+        customerId="tight-plan",
+        name="Tight Plan",
+        currency="NZD",
+        currentBalance=100,
+        monthlyIncome=200,
+        monthlyExpenses=0,
+        monthlySavings=200,
+        goals=[{
+            "goalId": "short_goal",
+            "name": "Short Goal",
+            "target": 500,
+            "current": 0,
+            "monthlyContribution": 500,
+        }],
+    )
+    result = run_simulation(
+        customer,
+        ParsedScenario(
+            scenarioType="one_off_purchase",
+            amount=50,
+            description="Small purchase",
+            horizonMonths=3,
+        ),
+    )
+
+    assert result.minimumProjectedBalance == -200
+    assert result.after.balance == 150
+    assert result.riskLevel == "High"
+    assert "during the projection" in result.riskReasons[0]
 
 
 def test_weekly_rent_increase_demo(alex: CustomerProfile) -> None:
@@ -48,6 +150,63 @@ def test_weekly_rent_increase_demo(alex: CustomerProfile) -> None:
     assert result.riskLevel == "High"
 
 
+def test_future_rent_increase_starts_after_the_projection_horizon(alex) -> None:
+    result = run_simulation(
+        alex,
+        ParsedScenario(
+            scenarioType="recurring_expense",
+            amount=100,
+            frequency="weekly",
+            description="Rent increase",
+            horizonMonths=12,
+            timingLabel="next year",
+        ),
+    )
+
+    house = _goal(result, "house_deposit")
+    assert result.atEventBefore is not None
+    assert result.atEventBefore.balance == 12_500
+    assert result.after.balance == 12_500
+    assert result.after.monthlyCashFlow == 916.67
+    assert (house.monthsBefore, house.monthsAfter) == (18, 18)
+    assert result.riskLevel == "Low"
+
+
+def test_recurring_expense_uses_unallocated_cash_before_delaying_goals() -> None:
+    customer = CustomerProfile(
+        customerId="surplus",
+        name="Surplus Saver",
+        currency="NZD",
+        currentBalance=10_000,
+        monthlyIncome=6_000,
+        monthlyExpenses=3_000,
+        monthlySavings=3_000,
+        goals=[{
+            "goalId": "deposit",
+            "name": "Deposit",
+            "target": 20_000,
+            "current": 5_000,
+            "monthlyContribution": 1_000,
+        }],
+    )
+
+    result = run_simulation(
+        customer,
+        ParsedScenario(
+            scenarioType="recurring_expense",
+            amount=500,
+            frequency="monthly",
+            description="Insurance increase",
+        ),
+    )
+
+    goal = _goal(result, "deposit")
+    assert result.after.monthlyCashFlow == 2_500
+    assert goal.monthlyContributionAfter == 1_000
+    assert goal.monthsAfter == goal.monthsBefore == 15
+    assert result.riskLevel == "Low"
+
+
 def test_weekly_extra_savings_demo(alex: CustomerProfile) -> None:
     result = run_simulation(
         alex,
@@ -60,9 +219,9 @@ def test_weekly_extra_savings_demo(alex: CustomerProfile) -> None:
     )
 
     house = _goal(result, "house_deposit")
-    assert result.after.monthlyCashFlow == 1350
-    assert (house.monthsBefore, house.monthsAfter) == (18, 14)
-    assert house.monthlyContributionAfter == 916.67
+    assert result.after.monthlyCashFlow == 1566.67
+    assert (house.monthsBefore, house.monthsAfter) == (18, 18)
+    assert house.monthlyContributionAfter == 700
     assert result.riskLevel == "Low"
     assert result.recommendation.weeklyAmount == 50
 
@@ -84,8 +243,18 @@ def test_extra_savings_can_target_emergency_fund(alex: CustomerProfile) -> None:
     assert (house.monthsBefore, house.monthsAfter) == (18, 18)
     assert (emergency.monthsBefore, emergency.monthsAfter) == (5, 3)
     assert emergency.monthlyContributionAfter == 566.67
+    assert result.after.monthlyCashFlow == 1566.67
 
 
 def test_missing_amount_is_rejected(alex: CustomerProfile) -> None:
     with pytest.raises(ValueError, match="positive"):
         run_simulation(alex, ParsedScenario(scenarioType="one_off_purchase"))
+
+
+def test_scenario_rejects_a_frequency_that_conflicts_with_its_type() -> None:
+    with pytest.raises(ValueError, match="recurring frequency"):
+        ParsedScenario(
+            scenarioType="recurring_expense",
+            amount=100,
+            frequency="one_time",
+        )

@@ -42,6 +42,8 @@ def test_bedrock_parser_returns_validated_scenario(mock_invoke) -> None:
         frequency="one_time",
         description="Japan trip",
         goalId="japan_holiday",
+        horizonMonths=12,
+        timingLabel="next year",
     )
 
 
@@ -63,7 +65,7 @@ def test_mock_explanation_uses_calculated_numbers(alex, monkeypatch: pytest.Monk
     explanation = generate_mock_explanation(alex, scenario, result)
 
     assert "$8,000.00 to $6,000.00" in explanation
-    assert "delayed by 2 months" in explanation
+    assert "timeline is unchanged" in explanation
     assert result.riskLevel in explanation
 
 

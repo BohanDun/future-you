@@ -1,4 +1,4 @@
-"""Money conversion and rounding helpers."""
+"""Money conversion and rounding helpers for the financial tools package."""
 
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 

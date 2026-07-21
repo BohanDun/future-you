@@ -1,34 +1,17 @@
-"""Quick Bedrock Converse smoke test. Requires AWS_BEARER_TOKEN_BEDROCK in the environment."""
-
-import os
+"""Quick Bedrock Converse smoke test using boto3's credential chain."""
 
 import boto3
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 
 from agent.config import AWS_REGION, BEDROCK_MODEL_ID
 
 
 def main() -> None:
-    if not os.getenv("AWS_BEARER_TOKEN_BEDROCK"):
-        raise SystemExit(
-            "Set AWS_BEARER_TOKEN_BEDROCK first, e.g.\n"
-            "  export AWS_BEARER_TOKEN_BEDROCK='your-api-key'"
-        )
-
-    for key in (
-        "AWS_ACCESS_KEY_ID",
-        "AWS_SECRET_ACCESS_KEY",
-        "AWS_SESSION_TOKEN",
-        "AWS_PROFILE",
-    ):
-        os.environ.pop(key, None)
-
-    client = boto3.client(
-        service_name="bedrock-runtime",
-        region_name=AWS_REGION,
-    )
-
     try:
+        client = boto3.client(
+            service_name="bedrock-runtime",
+            region_name=AWS_REGION,
+        )
         response = client.converse(
             modelId=BEDROCK_MODEL_ID,
             messages=[
@@ -36,7 +19,7 @@ def main() -> None:
                     "role": "user",
                     "content": [
                         {
-                            "text": "请用简单的语言解释什么是 AI agent。",
+                            "text": "Explain what an AI agent is in simple English.",
                         }
                     ],
                 }
@@ -58,6 +41,10 @@ def main() -> None:
         error_info = error.response.get("Error", {})
         print("Error code:", error_info.get("Code"))
         print("Error message:", error_info.get("Message"))
+        raise SystemExit(1) from error
+    except BotoCoreError as error:
+        print("Authentication or connection error:", error)
+        raise SystemExit(1) from error
 
 
 if __name__ == "__main__":

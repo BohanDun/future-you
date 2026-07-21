@@ -22,7 +22,11 @@ def _primary_goal_impact(
                 for impact in result.goalImpacts
                 if impact.monthsBefore != impact.monthsAfter
             ),
-            result.goalImpacts[0] if result.goalImpacts else None,
+            (
+                None
+                if scenario.scenarioType == "extra_savings" and not scenario.goalId
+                else result.goalImpacts[0] if result.goalImpacts else None
+            ),
         )
     return target_impact
 
@@ -66,10 +70,17 @@ def generate_mock_explanation(
     tone = _risk_tone(result.riskLevel)
 
     if scenario.scenarioType == "one_off_purchase":
-        impact = (
-            f"A {description} would move your available balance from "
-            f"${result.before.balance:,.2f} to ${result.after.balance:,.2f}."
-        )
+        if result.horizonMonths > 0 and result.atEventBefore is not None:
+            impact = (
+                f"By month {result.horizonMonths}, your projected available balance "
+                f"before the {description} is ${result.atEventBefore.balance:,.2f}, "
+                f"and ${result.after.balance:,.2f} would remain afterward."
+            )
+        else:
+            impact = (
+                f"A {description} would move your available balance from "
+                f"${result.before.balance:,.2f} to ${result.after.balance:,.2f}."
+            )
     elif scenario.scenarioType == "recurring_expense":
         impact = (
             f"The {description} would shift your monthly cash flow from "
@@ -77,12 +88,18 @@ def generate_mock_explanation(
             f"${result.after.monthlyCashFlow:,.2f}."
         )
     else:
-        contribution = target_impact.monthlyContributionAfter if target_impact else 0
-        goal_name = target_impact.goalName if target_impact else "financial goal"
-        impact = (
-            f"The {description} would raise your {goal_name} contribution to "
-            f"${contribution:,.2f} per month."
-        )
+        if target_impact:
+            contribution = target_impact.monthlyContributionAfter
+            impact = (
+                f"The {description} would raise your {target_impact.goalName} "
+                f"contribution to ${contribution:,.2f} per month."
+            )
+        else:
+            impact = (
+                f"The {description} would increase your monthly saving capacity "
+                f"from ${result.before.monthlyCashFlow:,.2f} to "
+                f"${result.after.monthlyCashFlow:,.2f}."
+            )
 
     timeline = ""
     if (

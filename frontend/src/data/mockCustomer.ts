@@ -12,6 +12,7 @@ export interface Goal {
 
 export interface CustomerProfile {
   name: string;
+  currency: string;
   balance: number;
   monthlyIncome: number;
   monthlyExpenses: number;
@@ -24,6 +25,7 @@ export interface CustomerProfile {
 
 export const mockCustomer: CustomerProfile = {
   name: 'Alex',
+  currency: 'NZD',
   balance: 8000,
   monthlyIncome: 5200,
   monthlyExpenses: 3850,

@@ -1,4 +1,4 @@
-from app.financial.risk import assess_financial_risk
+from app.financial_tools.risk import assess_financial_risk
 
 
 def test_low_risk_when_buffers_remain_healthy() -> None:

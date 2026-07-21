@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from app.financial.calculations import (
+from app.financial_tools.calculations import (
     apply_extra_savings,
     apply_one_time_purchase,
     apply_recurring_expense,

@@ -1,4 +1,5 @@
 from app.data import load_customer_profile, load_transactions
+from app.services.customer_service import _refresh_dashboard_insights
 
 
 def test_alex_profile_is_derived_from_transactions() -> None:
@@ -37,3 +38,18 @@ def test_synthetic_transaction_dataset() -> None:
 
 def test_unknown_customer_returns_none() -> None:
     assert load_customer_profile("missing") is None
+
+
+def test_loaded_profile_insights_are_refreshed_from_current_income(alex) -> None:
+    changed = alex.model_copy(update={
+        "monthlyIncome": 7700,
+        "monthlySavings": 3850,
+        "insights": ["stale insight"],
+    })
+
+    refreshed = _refresh_dashboard_insights(changed)
+
+    assert refreshed.insights[-1] == (
+        "You are saving approximately 50% of monthly income."
+    )
+    assert "stale insight" not in refreshed.insights

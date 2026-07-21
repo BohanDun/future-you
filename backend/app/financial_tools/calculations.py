@@ -3,7 +3,7 @@
 from decimal import ROUND_CEILING
 from typing import Literal
 
-from app.financial.money import MoneyInput, money, non_negative
+from app.financial_tools.money import MoneyInput, money, non_negative
 
 Frequency = Literal["weekly", "monthly", "yearly"]
 

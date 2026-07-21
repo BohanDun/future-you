@@ -10,7 +10,15 @@ const riskColor: Record<RiskLevel, string> = {
 
 // The horizon: a line from "Now" to "Future You". The dot's vertical position
 // encodes risk direction — it dips when risk worsens, lifts when it improves.
-export function Horizon({ riskBefore, riskAfter }: { riskBefore: RiskLevel; riskAfter: RiskLevel }) {
+export function Horizon({
+  riskBefore,
+  riskAfter,
+  endLabel = 'FUTURE YOU',
+}: {
+  riskBefore: RiskLevel;
+  riskAfter: RiskLevel;
+  endLabel?: string;
+}) {
   const order: Record<RiskLevel, number> = { Low: 0, Medium: 1, High: 2 };
   const worsened = order[riskAfter] > order[riskBefore];
   const improved = order[riskAfter] < order[riskBefore];
@@ -42,7 +50,7 @@ export function Horizon({ riskBefore, riskAfter }: { riskBefore: RiskLevel; risk
           NOW
         </Typography>
         <Typography variant="caption" sx={{ color: colors.inkSoft, fontWeight: 600 }}>
-          FUTURE YOU
+          {endLabel}
         </Typography>
       </Stack>
     </Stack>
