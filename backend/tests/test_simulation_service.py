@@ -23,7 +23,7 @@ def test_laptop_purchase_demo(alex: CustomerProfile) -> None:
     house = _goal(result, "house_deposit")
     assert result.before.balance == 8000
     assert result.after.balance == 6000
-    assert result.before.monthlyCashFlow == result.after.monthlyCashFlow == 1350
+    assert result.before.monthlyCashFlow == result.after.monthlyCashFlow == 0
     assert (house.monthsBefore, house.monthsAfter) == (18, 18)
     assert result.beforeRiskLevel == "Low"
     assert result.riskLevel == "Medium"
@@ -51,6 +51,13 @@ def test_future_purchase_projects_cash_flow_and_goal_contributions(alex) -> None
     assert result.fundedFromGoal == 3_000
     assert result.fundedFromBalance == 0
     assert result.after.balance == 12_500
+    assert result.before.monthlyCashFlow == 0
+    assert result.atEventBefore.monthlyCashFlow == 650
+    assert result.after.monthlyCashFlow == 650
+    japan = _goal(result, "japan_holiday")
+    assert japan.currentAtEvent == 3_000
+    assert japan.currentAfterEvent == 0
+    assert _goal(result, "house_deposit").currentAfterEvent == 16_400
     assert result.riskLevel == "Low"
 
 
@@ -96,6 +103,7 @@ def test_future_purchase_without_matching_goal_uses_projected_liquid_cash() -> N
     assert result.atEventBefore.balance == 34_000
     assert result.after.balance == 31_000
     assert result.fundedFromGoal == 0
+    assert all(goal.currentAfterEvent == goal.currentAtEvent for goal in result.goalImpacts)
     assert result.riskLevel == "Low"
 
 
@@ -189,7 +197,7 @@ def test_weekly_rent_increase_demo(alex: CustomerProfile) -> None:
 
     house = _goal(result, "house_deposit")
     assert result.after.balance == 8000
-    assert result.after.monthlyCashFlow == 916.67
+    assert result.after.monthlyCashFlow == 0
     assert (house.monthsBefore, house.monthsAfter) == (18, 26)
     assert result.riskLevel == "High"
 
@@ -211,7 +219,7 @@ def test_future_rent_increase_starts_after_the_projection_horizon(alex) -> None:
     assert result.atEventBefore is not None
     assert result.atEventBefore.balance == 12_500
     assert result.after.balance == 12_500
-    assert result.after.monthlyCashFlow == 916.67
+    assert result.after.monthlyCashFlow == 216.67
     assert (house.monthsBefore, house.monthsAfter) == (18, 18)
     assert result.riskLevel == "Low"
 
@@ -245,7 +253,8 @@ def test_recurring_expense_uses_unallocated_cash_before_delaying_goals() -> None
     )
 
     goal = _goal(result, "deposit")
-    assert result.after.monthlyCashFlow == 2_500
+    assert result.before.monthlyCashFlow == 2_000
+    assert result.after.monthlyCashFlow == 1_500
     assert goal.monthlyContributionAfter == 1_000
     assert goal.monthsAfter == goal.monthsBefore == 15
     assert result.riskLevel == "Low"
@@ -263,10 +272,10 @@ def test_weekly_extra_savings_demo(alex: CustomerProfile) -> None:
     )
 
     house = _goal(result, "house_deposit")
-    assert result.after.monthlyCashFlow == 1566.67
+    assert result.after.monthlyCashFlow == -216.67
     assert (house.monthsBefore, house.monthsAfter) == (18, 18)
     assert house.monthlyContributionAfter == 700
-    assert result.riskLevel == "Low"
+    assert result.riskLevel == "High"
     assert result.recommendation.weeklyAmount == 50
 
 
@@ -287,7 +296,8 @@ def test_extra_savings_can_target_emergency_fund(alex: CustomerProfile) -> None:
     assert (house.monthsBefore, house.monthsAfter) == (18, 18)
     assert (emergency.monthsBefore, emergency.monthsAfter) == (5, 3)
     assert emergency.monthlyContributionAfter == 566.67
-    assert result.after.monthlyCashFlow == 1566.67
+    assert result.after.monthlyCashFlow == -216.67
+    assert result.riskLevel == "High"
 
 
 def test_missing_amount_is_rejected(alex: CustomerProfile) -> None:

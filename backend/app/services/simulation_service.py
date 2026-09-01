@@ -103,6 +103,8 @@ def _goal_impacts(
     scenario: ParsedScenario,
     monthly_delta: Decimal,
     projected_goals: dict[str, Decimal] | None = None,
+    funded_goal_id: str | None = None,
+    funded_from_goal: Decimal = Decimal("0"),
 ) -> list[GoalImpact]:
     primary = _target_goal(
         customer,
@@ -139,6 +141,12 @@ def _goal_impacts(
         current_after = as_decimal(goal.current)
         contribution_after = as_decimal(goal.monthlyContribution)
 
+        if (
+            projected_goals is not None
+            and projected_goals[goal.goalId] >= as_decimal(goal.target)
+        ):
+            contribution_after = Decimal("0")
+
         if scenario.scenarioType == "recurring_expense":
             if current_by_goal[goal.goalId] >= as_decimal(goal.target):
                 contribution_after = Decimal("0")
@@ -146,6 +154,9 @@ def _goal_impacts(
                 contribution_after *= recurring_scale
         elif scenario.scenarioType == "extra_savings" and goal is primary:
             contribution_after += monthly_delta
+        elif scenario.scenarioType == "one_off_purchase" and goal.goalId == funded_goal_id:
+            # The named goal has served its purpose; do not immediately restart it.
+            contribution_after = Decimal("0")
 
         months_before = calculate_goal_completion_months(
             goal.target,
@@ -185,10 +196,29 @@ def _goal_impacts(
                     if projected_goals and goal.goalId in projected_goals
                     else None
                 ),
+                currentAfterEvent=(
+                    as_float(
+                        max(
+                            projected_goals[goal.goalId]
+                            - (funded_from_goal if goal.goalId == funded_goal_id else 0),
+                            Decimal("0"),
+                        )
+                    )
+                    if projected_goals and goal.goalId in projected_goals
+                    else None
+                ),
             )
         )
 
     return impacts
+
+
+def _available_monthly_cash(
+    monthly_surplus: Decimal,
+    contributions: list[Decimal],
+) -> Decimal:
+    """Cash remaining after expenses and scheduled goal allocations."""
+    return money(monthly_surplus - sum(contributions, Decimal("0")))
 
 
 def _goal_delay(impact: GoalImpact) -> int:
@@ -258,13 +288,22 @@ def run_simulation(
     if scenario.amount is None or scenario.amount <= 0:
         raise ValueError("A positive financial amount is required")
 
-    cash_flow_before = calculate_monthly_cash_flow(
+    monthly_surplus_before = as_decimal(calculate_monthly_cash_flow(
         customer.monthlyIncome,
         customer.monthlyExpenses,
+    ))
+    active_contributions_before = [
+        as_decimal(goal.monthlyContribution)
+        for goal in customer.goals
+        if as_decimal(goal.current) < as_decimal(goal.target)
+    ]
+    cash_flow_before = _available_monthly_cash(
+        monthly_surplus_before,
+        active_contributions_before,
     )
     balance_after = money(customer.currentBalance)
     at_event_before_balance = money(customer.currentBalance)
-    cash_flow_after = cash_flow_before
+    monthly_surplus_after = monthly_surplus_before
     monthly_delta = Decimal("0")
     projected_goals: dict[str, Decimal] | None = None
     contributed_by_event = Decimal("0")
@@ -295,8 +334,8 @@ def run_simulation(
         )
     elif scenario.scenarioType == "recurring_expense":
         frequency = scenario.frequency or "monthly"
-        monthly_cost, cash_flow_after = apply_recurring_expense(
-            cash_flow_before,
+        monthly_cost, monthly_surplus_after = apply_recurring_expense(
+            monthly_surplus_before,
             scenario.amount,
             frequency,
         )
@@ -311,26 +350,47 @@ def run_simulation(
             frequency,
         )
         monthly_delta = extra_monthly
-        cash_flow_after = money(as_decimal(cash_flow_before) + extra_monthly)
     else:
         raise ValueError("Unsupported scenario")
 
+    primary = _target_goal(
+        customer,
+        scenario,
+        use_default=False,
+    )
     goal_impacts = _goal_impacts(
         customer,
         scenario,
         monthly_delta,
         projected_goals=projected_goals,
-    )
-    primary = _target_goal(
-        customer,
-        scenario,
-        use_default=False,
+        funded_goal_id=(
+            primary.goalId
+            if scenario.scenarioType == "one_off_purchase" and primary
+            else None
+        ),
+        funded_from_goal=funded_from_goal,
     )
     primary_impact = next(
         (impact for impact in goal_impacts if primary and impact.goalId == primary.goalId),
         None,
     )
     max_delay = _max_goal_delay(goal_impacts)
+    cash_flow_after = _available_monthly_cash(
+        as_decimal(monthly_surplus_after),
+        [as_decimal(impact.monthlyContributionAfter) for impact in goal_impacts],
+    )
+    if scenario.scenarioType == "extra_savings" and primary is None:
+        cash_flow_after = money(cash_flow_after - monthly_delta)
+    event_contributions = [
+        as_decimal(goal.monthlyContribution)
+        for goal in customer.goals
+        if projected_goals is None
+        or projected_goals[goal.goalId] < as_decimal(goal.target)
+    ]
+    cash_flow_at_event = _available_monthly_cash(
+        monthly_surplus_before,
+        event_contributions,
+    )
 
     risk_before = assess_financial_risk(
         monthly_cash_flow_before=cash_flow_before,
@@ -349,7 +409,7 @@ def run_simulation(
     )
     event_risk = assess_financial_risk(
         monthly_cash_flow_before=cash_flow_before,
-        monthly_cash_flow_after=cash_flow_before,
+        monthly_cash_flow_after=cash_flow_at_event,
         available_balance_after=at_event_before_balance,
         monthly_expenses=customer.monthlyExpenses,
         max_goal_delay_months=0,
@@ -368,7 +428,7 @@ def run_simulation(
     )
     at_event_before = FinancialSnapshot(
         balance=as_float(at_event_before_balance),
-        monthlyCashFlow=as_float(cash_flow_before),
+        monthlyCashFlow=as_float(cash_flow_at_event),
         goalMonths=primary_impact.monthsBefore if primary_impact else None,
     )
     return SimulationResult(

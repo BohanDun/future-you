@@ -1,4 +1,11 @@
-from app.models.agent_action import SetGoalOperation, SetProfileOperation
+import pytest
+
+from app.models.agent_action import (
+    CreateGoalOperation,
+    GoalValues,
+    SetGoalOperation,
+    SetProfileOperation,
+)
 from app.services.agent_action_service import apply_agent_operations
 
 
@@ -94,3 +101,35 @@ def test_goal_operation_allows_saved_amount_above_target(alex) -> None:
     )
 
     assert updated.goals[0].current == goal.target + 100
+
+
+def test_create_goal_rejects_generic_duplicate_name(alex) -> None:
+    with pytest.raises(ValueError, match="already exists"):
+        apply_agent_operations(
+            alex,
+            [CreateGoalOperation(
+                operation="create",
+                resource="goal",
+                values=GoalValues(
+                    name="Emergency",
+                    target=5000,
+                    current=0,
+                    monthlyContribution=250,
+                ),
+            )],
+        )
+
+
+def test_rename_goal_rejects_generic_duplicate_name(alex) -> None:
+    house = alex.goals[0]
+    with pytest.raises(ValueError, match="already exists"):
+        apply_agent_operations(
+            alex,
+            [SetGoalOperation(
+                operation="set",
+                resource="goal",
+                resourceId=house.goalId,
+                field="name",
+                value="Emergency",
+            )],
+        )

@@ -48,7 +48,7 @@ function Column({
 
       <Box>
         <Typography variant="caption" sx={{ color: colors.inkSoft }}>
-          Monthly cash flow
+          Available monthly cash
         </Typography>
         <Typography sx={{ fontFamily: numericFont, fontSize: '1.05rem', fontWeight: 500 }}>
           {formatCurrency(cashFlow)}
@@ -66,7 +66,11 @@ function Column({
             <Typography sx={{ fontFamily: numericFont, fontSize: '0.85rem' }}>
               {variant === 'event' && g.currentAtEvent !== undefined
                 ? formatCurrency(g.currentAtEvent)
-                : formatMonths(variant === 'after' ? g.monthsAfter : g.monthsBefore)}
+                : variant === 'after'
+                    && (result.scenario.horizonMonths ?? 0) > 0
+                    && g.currentAfterEvent !== undefined
+                  ? formatCurrency(g.currentAfterEvent)
+                  : formatMonths(variant === 'after' ? g.monthsAfter : g.monthsBefore)}
             </Typography>
           </Stack>
         ))}

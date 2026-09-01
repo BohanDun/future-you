@@ -485,6 +485,8 @@ def test_afford_question_with_explicit_amount_is_supported() -> None:
     assert body["result"]["atEventBefore"]["balance"] == 12500
     assert body["result"]["after"]["balance"] == 12500
     assert body["result"]["fundedFromGoal"] == 3000
+    assert goals["japan_holiday"]["currentAtEvent"] == 3000
+    assert goals["japan_holiday"]["currentAfterEvent"] == 0
     assert body["result"]["riskLevel"] == "Low"
     assert "month 12" in body["explanation"]
 
@@ -566,8 +568,8 @@ def test_laptop_without_price_uses_estimated_amount() -> None:
 @pytest.mark.parametrize(
     ("question", "cash_flow", "house_months", "risk"),
     [
-        ("What if my rent increases by $100 per week?", 916.67, 26, "High"),
-        ("What if I save an extra $50 per week?", 1566.67, 18, "Low"),
+        ("What if my rent increases by $100 per week?", 0, 26, "High"),
+        ("What if I save an extra $50 per week?", -216.67, 18, "High"),
     ],
 )
 def test_simulate_endpoint_core_recurring_scenarios(

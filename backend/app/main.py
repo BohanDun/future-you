@@ -1,3 +1,5 @@
+import os
+
 from agent import (
     OFF_TOPIC_RESPONSE,
     SAFETY_SUPPORT_RESPONSE,
@@ -20,7 +22,7 @@ from app.models.customer import CustomerProfile, FinancialGoal
 from app.models.request import SimulationRequest, SpendingCategoriesInput, UserProfileInput
 from app.models.response import SimulationResponse
 from app.models.scenario import ParsedScenario
-from app.services.agent_action_service import apply_agent_operations
+from app.services.agent_action_service import apply_agent_operations, goal_names_match
 from app.services.auth_service import AUTH_MODE, CurrentUser
 from app.services.customer_service import get_customer, save_customer_profile
 from app.services.proposal_service import ProposalTokenError, verify_proposal_token
@@ -28,12 +30,20 @@ from app.services.simulation_service import run_simulation
 
 app = FastAPI(title="Future You API")
 
+
+def _cors_origins() -> list[str]:
+    configured = os.getenv("FRONTEND_URL", "")
+    origins = {
+        origin.strip().rstrip("/")
+        for origin in configured.split(",")
+        if origin.strip()
+    }
+    origins.update({"http://localhost:5173", "http://127.0.0.1:5173"})
+    return sorted(origins)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=_cors_origins(),
     allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
@@ -100,7 +110,7 @@ def add_current_user_goal(
         raise HTTPException(status_code=409, detail="A profile can have at most 10 goals")
     if any(existing.goalId == goal.goalId for existing in profile.goals):
         raise HTTPException(status_code=409, detail="A goal with this ID already exists")
-    if any(existing.name.casefold() == goal.name.casefold() for existing in profile.goals):
+    if any(goal_names_match(existing.name, goal.name) for existing in profile.goals):
         raise HTTPException(status_code=409, detail="A goal with this name already exists")
 
     profile.goals.append(goal)

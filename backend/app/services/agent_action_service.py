@@ -21,6 +21,17 @@ def _goal_id(name: str, existing_ids: set[str]) -> str:
     return candidate
 
 
+def goal_names_match(first: str, second: str) -> bool:
+    """Treat generic goal suffixes as equivalent when checking duplicates."""
+    def canonical(name: str) -> str:
+        words = re.findall(r"[a-z0-9]+", name.casefold())
+        while words and words[-1] in {"fund", "goal"}:
+            words.pop()
+        return " ".join(words)
+
+    return canonical(first) == canonical(second)
+
+
 def apply_agent_operations(
     profile: CustomerProfile,
     operations: list[AgentOperation],
@@ -35,7 +46,7 @@ def apply_agent_operations(
                 raise ValueError("A profile can have at most 10 goals")
             values = item.values
             duplicate_name = any(
-                goal.name.casefold() == values.name.strip().casefold()
+                goal_names_match(goal.name, values.name)
                 for goal in updated.goals
             )
             if duplicate_name:
@@ -64,6 +75,12 @@ def apply_agent_operations(
             goal = next((goal for goal in updated.goals if goal.goalId == item.resourceId), None)
             if goal is None:
                 raise ValueError(f"Goal '{item.resourceId}' was not found")
+            if item.field == "name" and any(
+                other.goalId != goal.goalId
+                and goal_names_match(other.name, str(item.value))
+                for other in updated.goals
+            ):
+                raise ValueError("A goal with this name already exists")
             values = goal.model_dump()
             values[item.field] = item.value.strip() if isinstance(item.value, str) else item.value
             updated.goals[updated.goals.index(goal)] = FinancialGoal.model_validate(values)

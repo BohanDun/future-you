@@ -14,3 +14,9 @@ def alex() -> CustomerProfile:
     customer = load_customer_profile("alex")
     assert customer is not None
     return customer
+
+
+@pytest.fixture(autouse=True)
+def isolate_mock_state(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    """Keep API tests independent from profiles saved by the local demo."""
+    monkeypatch.setenv("FUTURE_YOU_MOCK_STATE_DIR", str(tmp_path / "mock-customers"))

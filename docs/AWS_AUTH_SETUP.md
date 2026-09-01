@@ -59,6 +59,7 @@ export AWS_REGION_NAME=ap-southeast-2
 export AI_MODE=bedrock
 export BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
 export AGENT_PROPOSAL_SIGNING_KEY='a-private-random-value-of-at-least-32-characters'
+export FRONTEND_URL='https://your-deployed-frontend.example.com'
 export PYTHONPATH='../:.'
 ```
 
@@ -101,6 +102,10 @@ depth, also add an API Gateway JWT/Cognito authorizer:
 Keep `/health` public. Require authentication for `/me/profile`, `/simulate`,
 and `/customer/{customer_id}`. The backend derives the real user ID from the
 validated token and does not trust a browser-supplied customer ID.
+
+Set the Lambda `FRONTEND_URL` environment variable to the deployed frontend origin.
+For multiple approved origins, separate them with commas. Do not use `*` for the
+authenticated application.
 
 ## 6. Verify the flow
 

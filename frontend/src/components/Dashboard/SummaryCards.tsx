@@ -34,6 +34,12 @@ function StatCard({
 }
 
 export function SummaryCards({ profile }: { profile: CustomerProfile }) {
+  const activeGoalContributions = profile.goals.reduce(
+    (total, goal) => total + (goal.current < goal.target ? goal.monthlyContribution : 0),
+    0,
+  );
+  const availableMonthlyCash = profile.monthlySavings - activeGoalContributions;
+
   return (
     <Grid container spacing={2}>
       <Grid item xs={12} sm={6} md={3}>
@@ -47,8 +53,8 @@ export function SummaryCards({ profile }: { profile: CustomerProfile }) {
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         <StatCard
-          label="Monthly Cash Flow"
-          value={formatCurrency(profile.monthlySavings)}
+          label="Available Monthly Cash"
+          value={formatCurrency(availableMonthlyCash)}
           accent={colors.futureTeal}
         />
       </Grid>

@@ -170,6 +170,7 @@ interface BackendResponse {
       monthlyContributionBefore: number;
       monthlyContributionAfter: number;
       currentAtEvent?: number | null;
+      currentAfterEvent?: number | null;
     }>;
     recommendation: { description: string; weeklyAmount: number | null } | null;
     horizonMonths?: number;
@@ -241,6 +242,7 @@ function toSimulationResult(response: BackendResponse): SimulationResult | null 
     monthsBefore: goal.monthsBefore ?? Infinity,
     monthsAfter: goal.monthsAfter ?? Infinity,
     currentAtEvent: goal.currentAtEvent ?? undefined,
+    currentAfterEvent: goal.currentAfterEvent ?? undefined,
   }));
 
   return {

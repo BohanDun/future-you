@@ -360,6 +360,29 @@ def test_amount_answer_recovers_intent_across_two_clarification_turns(alex) -> N
     assert response.proposalToken
 
 
+def test_mock_goal_and_amount_answer_recovers_clarified_update(alex) -> None:
+    history = [
+        ConversationMessage(
+            role="user",
+            content="Update how much I have saved toward one of my goals.",
+        ),
+        ConversationMessage(
+            role="assistant",
+            content="Which goal would you like to update, and what is the new amount?",
+        ),
+    ]
+
+    with patch("agent.manager.get_ai_mode", return_value="mock"):
+        response = plan_profile_changes(alex, "Emergency 500", history)
+
+    assert len(response.operations) == 1
+    operation = response.operations[0]
+    assert operation.resourceId == "emergency_fund"
+    assert operation.field == "current"
+    assert operation.value == 500
+    assert response.proposalToken
+
+
 def test_customer_facing_text_preserves_answer_outside_thinking_tags() -> None:
     assert _customer_facing_text(
         "<analysis>Internal steps.</analysis>Please provide the new amount."

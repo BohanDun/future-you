@@ -228,6 +228,7 @@ python -m agent.scripts.test_bedrock
 | `CUSTOMER_TABLE_NAME` | DynamoDB profile table | `future-you-users` |
 | `BEDROCK_MODEL_ID` | Bedrock model used by the agent | `amazon.nova-lite-v1:0` |
 | `AGENT_PROPOSAL_SIGNING_KEY` | Signs Manage-mode proposals | Long random secret |
+| `FRONTEND_URL` | Comma-separated browser origins allowed by CORS | Local or deployed frontend URL |
 | `FUTURE_YOU_MOCK_STATE_DIR` | Optional local Mock profile storage | `backend/.local/mock-customers` |
 | `FUTURE_YOU_DATA_DIR` | Optional local demo-data override | Directory path |
 
@@ -309,8 +310,8 @@ React application
 
 - Follow [`docs/AWS_AUTH_SETUP.md`](docs/AWS_AUTH_SETUP.md) for Cognito, DynamoDB,
   permissions, frontend configuration, and route protection.
-- Use `backend/requirements-lambda.txt` when assembling the Lambda layer or deployment
-  package.
+- Run `./build-lambda.sh` to create a Python 3.12, x86_64 Lambda deployment package
+  at `backend/future-you-backend.zip`.
 - The Lambda entry point is `app.lambda_handler.handler`.
 - Include both `backend/app/` and the top-level `agent/` package in the deployment
   artifact.

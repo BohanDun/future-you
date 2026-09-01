@@ -26,6 +26,7 @@ export interface GoalOutcome {
   monthsBefore: number;
   monthsAfter: number;
   currentAtEvent?: number;
+  currentAfterEvent?: number;
 }
 
 export interface SimulationResult {
@@ -48,6 +49,17 @@ export interface SimulationResult {
 
 function roundMoney(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function activeGoalContributions(profile: CustomerProfile): number {
+  return profile.goals.reduce(
+    (total, goal) => total + (goal.current < goal.target ? goal.monthlyContribution : 0),
+    0,
+  );
+}
+
+function availableMonthlyCash(monthlySurplus: number, contributions: number): number {
+  return roundMoney(monthlySurplus - contributions);
 }
 
 function monthsToGoal(goal: Goal, contribution: number, current = goal.current): number {
@@ -156,14 +168,14 @@ function makeResult(
 ): SimulationResult {
   const delay = maxGoalDelay(goals);
   const riskBefore = assessRisk(
-    profile.monthlySavings,
-    profile.monthlySavings,
+    availableMonthlyCash(profile.monthlySavings, activeGoalContributions(profile)),
+    availableMonthlyCash(profile.monthlySavings, activeGoalContributions(profile)),
     profile.balance,
     profile.monthlyExpenses,
     0,
   );
   const riskAfter = assessRisk(
-    profile.monthlySavings,
+    availableMonthlyCash(profile.monthlySavings, activeGoalContributions(profile)),
     cashFlowAfter,
     balanceAfter,
     profile.monthlyExpenses,
@@ -172,7 +184,10 @@ function makeResult(
   return {
     balanceBefore: profile.balance,
     balanceAfter: roundMoney(balanceAfter),
-    monthlySavingsBefore: profile.monthlySavings,
+    monthlySavingsBefore: availableMonthlyCash(
+      profile.monthlySavings,
+      activeGoalContributions(profile),
+    ),
     monthlySavingsAfter: roundMoney(cashFlowAfter),
     goals,
     riskBefore: riskBefore.level,
@@ -213,12 +228,21 @@ function simulateOneOffPurchase(
     monthsBefore: monthsToGoal(goal, goal.monthlyContribution),
     monthsAfter: monthsToGoal(goal, goal.monthlyContribution),
     currentAtEvent: projectedGoals[index],
+    currentAfterEvent: Math.max(
+      projectedGoals[index] - (index === primaryIndex ? fundedFromGoal : 0),
+      0,
+    ),
   }));
+  const contributionsAfter = profile.goals.reduce((total, goal, index) => {
+    const completedAtEvent = projectedGoals[index] >= goal.target;
+    const usedForPurchase = index === primaryIndex && fundedFromGoal > 0;
+    return total + (!completedAtEvent && !usedForPurchase ? goal.monthlyContribution : 0);
+  }, 0);
   return makeResult(
     profile,
     scenario,
     projectedBalance - fundedFromBalance,
-    profile.monthlySavings,
+    availableMonthlyCash(profile.monthlySavings, contributionsAfter),
     goals,
     {
       balanceAtEventBefore: projectedBalance,
@@ -234,20 +258,28 @@ function simulateRecurringExpense(
   scenario: ParsedScenario,
 ): SimulationResult {
   const monthlyCost = roundMoney((scenario.amount * 52) / 12);
-  const cashFlowAfter = roundMoney(profile.monthlySavings - monthlyCost);
+  const monthlySurplusAfter = roundMoney(profile.monthlySavings - monthlyCost);
   const totalContributions = profile.goals.reduce(
-    (total, goal) => total + goal.monthlyContribution,
+    (total, goal) => total + (goal.current < goal.target ? goal.monthlyContribution : 0),
     0,
   );
-  const availableForGoals = Math.max(totalContributions - monthlyCost, 0);
-  const scale = totalContributions > 0 ? availableForGoals / totalContributions : 0;
+  const availableForGoals = Math.max(monthlySurplusAfter, 0);
+  const scale = totalContributions > 0
+    ? Math.min(availableForGoals / totalContributions, 1)
+    : 0;
   const goals = profile.goals.map((goal) => ({
     goalId: goal.id,
     goalName: goal.name,
     monthsBefore: monthsToGoal(goal, goal.monthlyContribution),
     monthsAfter: monthsToGoal(goal, goal.monthlyContribution * scale),
   }));
-  return makeResult(profile, scenario, profile.balance, cashFlowAfter, goals);
+  return makeResult(
+    profile,
+    scenario,
+    profile.balance,
+    availableMonthlyCash(monthlySurplusAfter, totalContributions * scale),
+    goals,
+  );
 }
 
 function simulateExtraSavings(
@@ -265,7 +297,16 @@ function simulateExtraSavings(
       monthsAfter: monthsToGoal(goal, contribution),
     };
   });
-  return makeResult(profile, scenario, profile.balance, profile.monthlySavings, goals);
+  return makeResult(
+    profile,
+    scenario,
+    profile.balance,
+    availableMonthlyCash(
+      profile.monthlySavings,
+      activeGoalContributions(profile) + extraMonthly,
+    ),
+    goals,
+  );
 }
 
 export function runSimulation(

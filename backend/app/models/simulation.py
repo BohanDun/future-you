@@ -30,6 +30,7 @@ class GoalImpact(BaseModel):
     monthlyContributionBefore: float = Field(ge=0)
     monthlyContributionAfter: float = Field(ge=0)
     currentAtEvent: float | None = Field(default=None, ge=0)
+    currentAfterEvent: float | None = Field(default=None, ge=0)
 
 
 class SimulationResult(BaseModel):

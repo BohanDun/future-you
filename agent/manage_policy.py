@@ -53,7 +53,7 @@ _PROFILE_FIELD_PATTERNS = {
         r"\bmy balance\b",
         r"\bbalance\b",
         r"\bavailable cash\b",
-        r"\bhow much (?:money )?i (?:currently )?have\b",
+        r"\bhow much (?:money )?i (?:currently )?have\b(?!\s+saved\b)",
     ),
     "monthlyIncome": (
         r"\bmonthly income\b",
@@ -125,6 +125,46 @@ def _matches_any(text: str, patterns: tuple[str, ...]) -> bool:
     return any(re.search(pattern, text, re.IGNORECASE | re.DOTALL) for pattern in patterns)
 
 
+def _referenced_goal_ids(context: str, profile: CustomerProfile) -> frozenset[str]:
+    directly_matched = {
+        goal.goalId
+        for goal in profile.goals
+        if re.search(
+            rf"(?<!\w)(?:{re.escape(goal.goalId)}|{re.escape(goal.name)})(?!\w)",
+            context,
+            re.IGNORECASE,
+        )
+    }
+    if directly_matched:
+        return frozenset(directly_matched)
+
+    generic_words = {"fund", "goal", "saving", "savings", "deposit"}
+    aliases_by_goal = {
+        goal.goalId: {
+            word
+            for word in re.findall(r"[a-z0-9]+", goal.name.casefold())
+            if len(word) >= 4 and word not in generic_words
+        }
+        for goal in profile.goals
+    }
+    mentioned_aliases = {
+        alias
+        for aliases in aliases_by_goal.values()
+        for alias in aliases
+        if re.search(rf"(?<!\w){re.escape(alias)}(?!\w)", context, re.IGNORECASE)
+    }
+    unique_aliases = {
+        alias
+        for alias in mentioned_aliases
+        if sum(alias in aliases for aliases in aliases_by_goal.values()) == 1
+    }
+    return frozenset(
+        goal_id
+        for goal_id, aliases in aliases_by_goal.items()
+        if aliases & unique_aliases
+    )
+
+
 def _request_context(message: str, history: list[object]) -> str:
     text = message.strip()
     last_message = history[-1] if history else None
@@ -190,15 +230,7 @@ def classify_manage_request(
         and re.search(r"\bmonthly goal\b", context, re.IGNORECASE)
     ):
         goal_fields = frozenset(field for field in goal_fields if field != "target")
-    referenced_goal_ids = frozenset(
-        goal.goalId
-        for goal in profile.goals
-        if re.search(
-            rf"(?<!\w)(?:{re.escape(goal.goalId)}|{re.escape(goal.name)})(?!\w)",
-            context,
-            re.IGNORECASE,
-        )
-    )
+    referenced_goal_ids = _referenced_goal_ids(context, profile)
     requested_numbers = tuple(
         float(value.replace(",", ""))
         for value in _NUMBER_VALUE.findall(context)
