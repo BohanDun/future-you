@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Future You — Presentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Instrument+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #121A2A;
+      --ink-soft: #4B5568;
+      --paper: #EFF3F4;
+      --surface: #FFFFFF;
+      --line: #DEE4E3;
+      --gold: #C8963B;
+      --gold-soft: #F4E7CE;
+      --teal: #1E6B67;
+      --teal-soft: #DCEDEA;
+      --risk-high: #B3462F;
+      --risk-high-soft: #F6DFD8;
+      --deep: #0B1220;
+      --deep-mid: #152033;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: var(--deep);
+      color: var(--ink);
+      font-family: "Instrument Sans", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .deck {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: clamp(1.5rem, 4vw, 4rem);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(18px) scale(0.985);
+      transition:
+        opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+        visibility 0.55s;
+      overflow: hidden;
+    }
+
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0) scale(1);
+      z-index: 2;
+    }
+
+    .slide.exit {
+      opacity: 0;
+      transform: translateY(-12px) scale(0.99);
+      z-index: 1;
+    }
+
+    .slide-inner {
+      width: min(1120px, 100%);
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Atmosphere */
+    .atmosphere {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    .horizon-glow {
+      position: absolute;
+      left: 50%;
+      bottom: -18%;
+      width: 140%;
+      height: 70%;
+      transform: translateX(-50%);
+      background:
+        radial-gradient(ellipse at center, rgba(200, 150, 59, 0.28) 0%, transparent 55%),
+        radial-gradient(ellipse at 30% 60%, rgba(30, 107, 103, 0.22) 0%, transparent 50%);
+      animation: breathe 8s ease-in-out infinite;
+    }
+
+    .horizon-line {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 28%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(200, 150, 59, 0.55), transparent);
+      opacity: 0.7;
+    }
+
+    .grain {
+      position: absolute;
+      inset: 0;
+      opacity: 0.04;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      mix-blend-mode: overlay;
+    }
+
+    .mesh-light {
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(200, 150, 59, 0.12), transparent 50%),
+        radial-gradient(ellipse 60% 40% at 100% 100%, rgba(30, 107, 103, 0.08), transparent 45%),
+        var(--paper);
+    }
+
+    .mesh-deep {
+      background:
+        radial-gradient(ellipse 90% 55% at 50% 110%, rgba(200, 150, 59, 0.18), transparent 50%),
+        radial-gradient(ellipse 50% 40% at 0% 0%, rgba(30, 107, 103, 0.2), transparent 45%),
+        var(--deep);
+      color: #F3F6F7;
+    }
+
+    .mesh-deep .muted { color: rgba(243, 246, 247, 0.62); }
+    .mesh-deep .gold { color: var(--gold); }
+    .mesh-deep .teal { color: #7EC8C3; }
+
+    @keyframes breathe {
+      0%, 100% { opacity: 0.85; transform: translateX(-50%) scale(1); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1.04); }
+    }
+
+    @keyframes rise {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes draw {
+      from { stroke-dashoffset: 400; }
+      to { stroke-dashoffset: 0; }
+    }
+
+    @keyframes countPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.015); }
+    }
+
+    .active .reveal {
+      animation: rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .active .d1 { animation-delay: 0.08s; }
+    .active .d2 { animation-delay: 0.16s; }
+    .active .d3 { animation-delay: 0.24s; }
+    .active .d4 { animation-delay: 0.32s; }
+    .active .d5 { animation-delay: 0.4s; }
+    .active .d6 { animation-delay: 0.48s; }
+
+    /* Type */
+    .brand {
+      font-family: "Fraunces", Georgia, serif;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 0.95;
+    }
+
+    .display {
+      font-family: "Fraunces", Georgia, serif;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      line-height: 1.05;
+      font-size: clamp(2.4rem, 5.5vw, 4.6rem);
+    }
+
+    .headline {
+      font-family: "Fraunces", Georgia, serif;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      line-height: 1.12;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+    }
+
+    .lede {
+      font-size: clamp(1.05rem, 1.6vw, 1.3rem);
+      line-height: 1.55;
+      color: var(--ink-soft);
+      max-width: 36rem;
+    }
+
+    .mesh-deep .lede { color: rgba(243, 246, 247, 0.68); }
+
+    .eyebrow {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--teal);
+      margin-bottom: 1rem;
+    }
+
+    .mesh-deep .eyebrow { color: #7EC8C3; }
+
+    .mono {
+      font-family: "IBM Plex Mono", monospace;
+      font-weight: 500;
+    }
+
+    .gold { color: var(--gold); }
+    .teal { color: var(--teal); }
+    .muted { color: var(--ink-soft); }
+
+    /* UI chrome */
+    .chrome {
+      position: fixed;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      pointer-events: none;
+    }
+
+    .chrome-top {
+      top: 1.25rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      justify-content: space-between;
+    }
+
+    .chrome-bottom {
+      bottom: 1.25rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      justify-content: space-between;
+    }
+
+    .logo-mark {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-family: "Fraunces", serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: inherit;
+      opacity: 0.85;
+    }
+
+    .logo-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--gold), var(--teal));
+      box-shadow: 0 0 16px rgba(200, 150, 59, 0.45);
+    }
+
+    .progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.7;
+    }
+
+    .progress-bar {
+      width: 120px;
+      height: 2px;
+      background: rgba(127, 140, 150, 0.25);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--teal), var(--gold));
+      transition: width 0.4s ease;
+    }
+
+    .nav-hint {
+      font-size: 0.75rem;
+      opacity: 0.55;
+      letter-spacing: 0.04em;
+    }
+
+    .nav-hint kbd {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      border: 1px solid rgba(127, 140, 150, 0.35);
+      border-radius: 4px;
+      font-family: inherit;
+      font-size: 0.7rem;
+      margin: 0 0.15rem;
+    }
+
+    .dots {
+      display: flex;
+      gap: 0.4rem;
+      pointer-events: auto;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(127, 140, 150, 0.35);
+      cursor: pointer;
+      transition: transform 0.2s, background 0.2s;
+    }
+
+    .dot.on {
+      background: var(--gold);
+      transform: scale(1.25);
+    }
+
+    .mesh-deep .dot { background: rgba(243, 246, 247, 0.25); }
+    .mesh-deep .dot.on { background: var(--gold); }
+
+    /* Layout helpers */
+    .stack { display: flex; flex-direction: column; gap: 1.25rem; }
+    .row { display: flex; gap: 1.5rem; align-items: stretch; flex-wrap: wrap; }
+    .center-text { text-align: center; }
+    .mx-auto { margin-left: auto; margin-right: auto; }
+
+    /* Cards / panels — only for interactive comparison content */
+    .pillars {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+
+    @media screen and (max-width: 900px) {
+      .pillars { grid-template-columns: 1fr; }
+      .arch-grid { grid-template-columns: 1fr !important; }
+      .compare { grid-template-columns: 1fr !important; }
+      .team-grid { grid-template-columns: 1fr !important; }
+      .ask-grid { grid-template-columns: 1fr 1fr !important; }
+    }
+
+    .pillar {
+      padding: 1.5rem 1.4rem 1.6rem;
+      border-top: 2px solid var(--gold);
+      background: rgba(255, 255, 255, 0.55);
+      backdrop-filter: blur(8px);
+    }
+
+    .mesh-deep .pillar {
+      background: rgba(255, 255, 255, 0.04);
+      border-top-color: var(--gold);
+    }
+
+    .pillar-num {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.8rem;
+      color: var(--gold);
+      margin-bottom: 0.85rem;
+    }
+
+    .pillar h3 {
+      font-family: "Fraunces", serif;
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin-bottom: 0.6rem;
+    }
+
+    .pillar p {
+      font-size: 0.95rem;
+      line-height: 1.5;
+      color: var(--ink-soft);
+    }
+
+    .mesh-deep .pillar p { color: rgba(243, 246, 247, 0.65); }
+
+    /* Quote slide */
+    .quote {
+      font-family: "Fraunces", serif;
+      font-size: clamp(1.8rem, 3.8vw, 3rem);
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+      max-width: 18ch;
+    }
+
+    .quote em {
+      font-style: italic;
+      color: var(--gold);
+    }
+
+    /* Ask chips */
+    .ask-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .ask {
+      padding: 1.15rem 1.25rem;
+      border-left: 3px solid var(--teal);
+      background: rgba(255, 255, 255, 0.7);
+      font-size: 1.05rem;
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    /* Flow */
+    .flow {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+
+    .flow-step {
+      padding: 0.85rem 1.1rem;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.92rem;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    .flow-arrow {
+      color: var(--gold);
+      font-size: 1.1rem;
+      opacity: 0.8;
+    }
+
+    .mode-flows {
+      display: grid;
+      gap: 1rem;
+      margin-top: 1.8rem;
+    }
+
+    .mode-flow {
+      display: grid;
+      grid-template-columns: 100px 1fr;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.15rem;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .mode-name {
+      color: var(--gold);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 0.78rem;
+    }
+
+    .mode-path {
+      font-size: 1rem;
+      line-height: 1.45;
+      color: rgba(243, 246, 247, 0.9);
+    }
+
+    .mode-path span { color: var(--gold); padding: 0 0.4rem; }
+
+    /* Comparison */
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 1.5rem;
+      align-items: stretch;
+      margin-top: 2rem;
+    }
+
+    .compare-col {
+      padding: 1.5rem;
+      background: rgba(255, 255, 255, 0.72);
+      border: 1px solid var(--line);
+    }
+
+    .compare-col.after {
+      border-color: rgba(200, 150, 59, 0.45);
+      background: linear-gradient(180deg, var(--gold-soft) 0%, #fff 55%);
+    }
+
+    .compare-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      color: var(--ink-soft);
+    }
+
+    .compare-col.after .compare-label { color: var(--gold); }
+
+    .metric-label {
+      font-size: 0.78rem;
+      color: var(--ink-soft);
+      margin-bottom: 0.2rem;
+    }
+
+    .metric-value {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 1.55rem;
+      font-weight: 500;
+      margin-bottom: 1rem;
+    }
+
+    .risk-badge {
+      display: inline-block;
+      padding: 0.35rem 0.7rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      border-radius: 6px;
+    }
+
+    .risk-low { background: var(--teal-soft); color: var(--teal); }
+    .risk-med { background: var(--gold-soft); color: #8A6420; }
+    .risk-high { background: var(--risk-high-soft); color: var(--risk-high); }
+
+    .compare-mid {
+      display: grid;
+      place-items: center;
+      font-family: "Fraunces", serif;
+      font-size: 1.5rem;
+      color: var(--gold);
+      align-self: center;
+    }
+
+    /* Principle */
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .split-block {
+      padding: 1.75rem 1.5rem;
+      min-height: 180px;
+    }
+
+    .split-block.explain {
+      background: rgba(30, 107, 103, 0.08);
+      border-bottom: 3px solid var(--teal);
+    }
+
+    .split-block.calc {
+      background: rgba(200, 150, 59, 0.1);
+      border-bottom: 3px solid var(--gold);
+    }
+
+    .split-block h3 {
+      font-family: "Fraunces", serif;
+      font-size: 1.5rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .split-block p {
+      color: var(--ink-soft);
+      line-height: 1.5;
+    }
+
+    /* Architecture */
+    .arch-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.75rem;
+      margin-top: 2rem;
+      align-items: stretch;
+    }
+
+    .arch-node {
+      padding: 1.1rem 0.85rem;
+      text-align: center;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 0.88rem;
+      font-weight: 600;
+      line-height: 1.35;
+    }
+
+    .arch-node span {
+      display: block;
+      margin-top: 0.35rem;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: rgba(243, 246, 247, 0.55);
+    }
+
+    .arch-node.accent {
+      border-color: rgba(200, 150, 59, 0.45);
+      background: rgba(200, 150, 59, 0.12);
+    }
+
+    .arch-system {
+      display: grid;
+      grid-template-columns: 1.05fr 0.28fr 0.78fr 0.5fr 1.05fr 0.28fr 2.3fr;
+      gap: 0.45rem;
+      align-items: center;
+      margin-top: 1.7rem;
+    }
+
+    .arch-arrow {
+      text-align: center;
+      color: var(--gold);
+      font-size: 1.25rem;
+    }
+
+    .arch-core {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.65rem;
+    }
+
+    .arch-core .arch-node:first-child {
+      grid-column: 1 / -1;
+      border-color: rgba(200, 150, 59, 0.5);
+      background: rgba(200, 150, 59, 0.13);
+    }
+
+    .arch-note {
+      margin-top: 1.35rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(243, 246, 247, 0.15);
+      color: rgba(243, 246, 247, 0.67);
+      font-size: 0.94rem;
+      line-height: 1.5;
+    }
+
+    /* Tech */
+    .tech-rows {
+      display: grid;
+      gap: 0.85rem;
+      margin-top: 1.75rem;
+    }
+
+    .tech-row {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 1rem;
+      align-items: baseline;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid rgba(18, 26, 42, 0.1);
+    }
+
+    .tech-layer {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--teal);
+    }
+
+    .tech-items {
+      font-size: 1.05rem;
+      font-weight: 500;
+      line-height: 1.45;
+    }
+
+    /* Alex profile */
+    .profile {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 2rem;
+      margin-top: 1.75rem;
+      align-items: start;
+    }
+
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .stat {
+      padding: 1rem 0;
+      border-top: 1px solid var(--line);
+    }
+
+    .stat .label {
+      font-size: 0.75rem;
+      color: var(--ink-soft);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat .value {
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 1.35rem;
+    }
+
+    .goal-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .goal {
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .goal-top {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
+      margin-bottom: 0.45rem;
+      font-size: 0.95rem;
+    }
+
+    .bar {
+      height: 6px;
+      background: var(--line);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .bar > i {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--teal), var(--gold));
+      border-radius: 99px;
+    }
+
+    /* Team */
+    .team-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.25rem;
+      margin-top: 2rem;
+    }
+
+    .person {
+      padding: 1.5rem 1.25rem;
+      border-top: 2px solid var(--teal);
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    .person:nth-child(2) { border-top-color: var(--gold); }
+    .person:nth-child(3) { border-top-color: var(--ink); }
+
+    .person h3 {
+      font-family: "Fraunces", serif;
+      font-size: 1.25rem;
+      margin: 0.5rem 0 0.4rem;
+    }
+
+    .person .role {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+
+    .person p {
+      margin-top: 0.75rem;
+      font-size: 0.92rem;
+      color: var(--ink-soft);
+      line-height: 1.45;
+    }
+
+    /* Closing */
+    .closing-cta {
+      margin-top: 2rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.9rem 1.4rem;
+      background: linear-gradient(135deg, var(--gold), #E0B45A);
+      color: var(--ink);
+      font-weight: 700;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      cursor: default;
+      animation: countPulse 3s ease-in-out infinite;
+    }
+
+    /* SVG horizon art */
+    .hero-art {
+      width: min(520px, 90vw);
+      margin: 1.75rem auto 0;
+      opacity: 0.9;
+    }
+
+    .hero-art path {
+      fill: none;
+      stroke: var(--gold);
+      stroke-width: 1.5;
+      stroke-linecap: round;
+    }
+
+    .active .hero-art path {
+      stroke-dasharray: 400;
+      animation: draw 1.8s ease forwards;
+    }
+
+    .hero-art .sun {
+      fill: var(--gold);
+      opacity: 0.85;
+    }
+
+    /* Strike contrast */
+    .contrast-line {
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      margin-top: 2rem;
+      max-width: 40rem;
+    }
+
+    .was, .now {
+      font-size: clamp(1.35rem, 2.5vw, 1.85rem);
+      font-family: "Fraunces", serif;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .was {
+      color: rgba(243, 246, 247, 0.4);
+      text-decoration: line-through;
+      text-decoration-thickness: 2px;
+      text-decoration-color: rgba(179, 70, 47, 0.6);
+    }
+
+    .now { color: #F3F6F7; }
+    .now span { color: var(--gold); }
+
+    /* Demo scenario callout */
+    .scenario {
+      display: inline-block;
+      margin-top: 0.5rem;
+      padding: 0.55rem 0.9rem;
+      background: rgba(30, 107, 103, 0.1);
+      border-left: 3px solid var(--teal);
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 0.92rem;
+    }
+
+    .insight {
+      margin-top: 1.25rem;
+      font-size: 1.05rem;
+      color: var(--ink-soft);
+      max-width: 36rem;
+      line-height: 1.5;
+    }
+
+    /* Full-bleed brand title sizing */
+    .mega-brand {
+      font-size: clamp(3.5rem, 12vw, 9rem);
+      line-height: 0.9;
+    }
+
+    .tagline {
+      margin-top: 1.5rem;
+      font-size: clamp(1.1rem, 2vw, 1.45rem);
+      max-width: 28rem;
+      line-height: 1.45;
+      color: rgba(243, 246, 247, 0.72);
+    }
+
+    .tagline strong {
+      color: #F3F6F7;
+      font-weight: 600;
+    }
+
+    /* Evidence-first layouts used by the refined deck. */
+    .product-steps {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      align-items: center;
+      gap: 1.25rem;
+      margin-top: 2.5rem;
+      padding: 1.6rem 0;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .product-step strong {
+      display: block;
+      margin-bottom: 0.55rem;
+      font-family: "Fraunces", serif;
+      font-size: 1.3rem;
+      color: var(--ink);
+    }
+
+    .product-step span {
+      color: var(--ink-soft);
+      line-height: 1.5;
+    }
+
+    .product-arrow {
+      color: var(--gold);
+      font-size: 1.4rem;
+    }
+
+    .screenshot-frame {
+      height: 430px;
+      margin-top: 1.2rem;
+      overflow: hidden;
+      border: 1px solid rgba(15, 29, 50, 0.16);
+      background: #eef3f4;
+      box-shadow: 0 18px 44px rgba(15, 29, 50, 0.12);
+    }
+
+    .screenshot-frame img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center 42%;
+    }
+
+    .screenshot-caption {
+      display: flex;
+      justify-content: space-between;
+      gap: 2rem;
+      margin-top: 0.8rem;
+      font-size: 0.82rem;
+      color: var(--ink-soft);
+    }
+
+    .mode-examples {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      margin-top: 1.9rem;
+    }
+
+    .mode-example {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      column-gap: 2rem;
+      align-items: start;
+      padding-top: 1.2rem;
+      border-top: 3px solid var(--teal);
+    }
+
+    .mode-example.manage {
+      border-top-color: var(--gold);
+    }
+
+    .mode-example.never {
+      border-top-color: var(--danger);
+    }
+
+    .mode-example h3 {
+      grid-row: 1 / span 2;
+      margin: 0;
+      font-family: "Fraunces", serif;
+      font-size: 1.5rem;
+    }
+
+    .mode-example blockquote {
+      margin: 0 0 0.55rem;
+      font-size: 1.2rem;
+      line-height: 1.45;
+      color: var(--ink);
+    }
+
+    .mode-example p {
+      color: var(--ink-soft);
+      line-height: 1.55;
+    }
+
+    .future-timeline {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr auto 1fr;
+      align-items: stretch;
+      gap: 1.1rem;
+      margin-top: 2.2rem;
+    }
+
+    .timeline-stage {
+      padding: 1.4rem;
+      border-top: 2px solid var(--teal);
+      background: rgba(255,255,255,0.62);
+    }
+
+    .timeline-stage.event {
+      border-top-color: var(--gold);
+      background: var(--gold-soft);
+    }
+
+    .timeline-stage .when {
+      margin-bottom: 0.7rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--ink-soft);
+    }
+
+    .timeline-stage strong {
+      display: block;
+      margin-bottom: 0.45rem;
+      font-family: "IBM Plex Mono", monospace;
+      font-size: 1.45rem;
+    }
+
+    .timeline-stage p {
+      color: var(--ink-soft);
+      line-height: 1.45;
+    }
+
+    .timeline-arrow {
+      display: grid;
+      place-items: center;
+      color: var(--gold);
+      font-size: 1.35rem;
+    }
+
+    .arch-runtime {
+      display: grid;
+      grid-template-columns: 1.05fr auto 0.85fr auto 1.4fr auto 1.45fr;
+      align-items: center;
+      gap: 0.85rem;
+      margin-top: 2rem;
+    }
+
+    .arch-box {
+      padding: 1.15rem;
+      border: 1px solid rgba(243,246,247,0.2);
+      background: rgba(255,255,255,0.045);
+      text-align: center;
+    }
+
+    .arch-box strong {
+      display: block;
+      margin-bottom: 0.4rem;
+      color: #F3F6F7;
+    }
+
+    .arch-box span {
+      font-size: 0.78rem;
+      color: rgba(243,246,247,0.6);
+    }
+
+    .arch-box.lambda {
+      border-color: rgba(200,150,59,0.75);
+      background: rgba(200,150,59,0.09);
+    }
+
+    .arch-services {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+    }
+
+    .arch-connector {
+      color: var(--gold);
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .auth-strip {
+      margin-top: 1.3rem;
+      padding: 0.9rem 1.1rem;
+      border-left: 3px solid var(--teal-2);
+      background: rgba(255,255,255,0.04);
+      color: rgba(243,246,247,0.72);
+    }
+
+    .proof-list {
+      margin: 2.1rem 0 0;
+      padding: 0;
+      list-style: none;
+      text-align: left;
+      border-top: 1px solid rgba(243,246,247,0.2);
+    }
+
+    .proof-list li {
+      display: grid;
+      grid-template-columns: 2rem 1fr;
+      gap: 1rem;
+      padding: 1rem 0;
+      border-bottom: 1px solid rgba(243,246,247,0.16);
+      color: rgba(243,246,247,0.84);
+      font-size: 1.05rem;
+      line-height: 1.4;
+    }
+
+    .proof-list .check {
+      color: var(--gold);
+      font-weight: 700;
+    }
+
+    /* Print-ready export: one 16:9 slide per PDF page. */
+    @media print {
+      @page {
+        size: 13.333in 7.5in;
+        margin: 0;
+      }
+
+      html,
+      body {
+        width: 13.333in !important;
+        height: auto !important;
+        overflow: visible !important;
+        background: #ffffff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+
+      .chrome {
+        display: none !important;
+      }
+
+      .deck {
+        position: static !important;
+        width: 13.333in !important;
+        height: auto !important;
+      }
+
+      .slide,
+      .slide.active,
+      .slide.exit {
+        position: relative !important;
+        inset: auto !important;
+        display: grid !important;
+        width: 13.333in !important;
+        height: 7.5in !important;
+        min-height: 7.5in !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+        transform: none !important;
+        transition: none !important;
+        overflow: hidden !important;
+        break-after: page !important;
+        page-break-after: always !important;
+      }
+
+      .slide:last-child {
+        break-after: auto !important;
+        page-break-after: auto !important;
+      }
+
+      .reveal {
+        opacity: 1 !important;
+        transform: none !important;
+        animation: none !important;
+      }
+
+      /* Keep exported PDFs lightweight and deterministic. Complex SVG noise,
+         blended gradients and backdrop filters force Chromium to rasterize
+         entire pages at print resolution. */
+      .grain,
+      .horizon-glow {
+        display: none !important;
+      }
+
+      .mesh-light {
+        background: #F3F6F7 !important;
+      }
+
+      .mesh-deep {
+        background: #0F1D32 !important;
+      }
+
+      * {
+        animation: none !important;
+        transition: none !important;
+        -webkit-backdrop-filter: none !important;
+        backdrop-filter: none !important;
+      }
+
+      .pillars {
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+
+      .compare {
+        grid-template-columns: 1fr auto 1fr !important;
+        gap: 1rem !important;
+        margin-top: 1rem !important;
+      }
+
+      .compare-col {
+        padding: 1.05rem 1.25rem !important;
+      }
+
+      .compare-label,
+      .metric-value {
+        margin-bottom: 0.55rem !important;
+      }
+
+      .compare + .insight {
+        margin-top: 0.8rem !important;
+      }
+
+      .arch-system {
+        grid-template-columns: 1.05fr 0.28fr 0.78fr 0.5fr 1.05fr 0.28fr 2.3fr !important;
+      }
+
+      .profile,
+      .split {
+        grid-template-columns: 1.1fr 1fr !important;
+      }
+
+      .product-steps {
+        grid-template-columns: 1fr auto 1fr auto 1fr !important;
+      }
+
+      .mode-examples {
+        grid-template-columns: 1fr !important;
+      }
+
+      .future-timeline {
+        grid-template-columns: 1fr auto 1fr auto 1fr !important;
+      }
+
+      .arch-runtime {
+        grid-template-columns: 1.05fr auto 0.85fr auto 1.4fr auto 1.45fr !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="chrome chrome-top">
+    <div class="logo-mark" id="chromeBrand">
+      <span class="logo-dot"></span>
+      Future You
+    </div>
+    <div class="progress-wrap">
+      <span id="slideNum">01</span>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <span id="slideTotal">10</span>
+    </div>
+  </div>
+
+  <div class="chrome chrome-bottom">
+    <div class="nav-hint"><kbd>←</kbd><kbd>→</kbd> or click</div>
+    <div class="dots" id="dots"></div>
+  </div>
+
+  <div class="deck" id="deck">
+
+    <!-- 1. Title -->
+    <section class="slide mesh-deep active" data-theme="deep">
+      <div class="atmosphere">
+        <div class="horizon-glow"></div>
+        <div class="horizon-line"></div>
+        <div class="grain"></div>
+      </div>
+      <div class="slide-inner center-text">
+        <p class="eyebrow reveal d1">Financial wellbeing prototype</p>
+        <h1 class="brand mega-brand reveal d2">Future<br />You</h1>
+        <p class="tagline reveal d3 mx-auto">
+          <strong>Ask before you act.</strong><br />A conversational financial simulator showing how today’s decision changes tomorrow’s cash flow, goals and financial buffer.
+        </p>
+        <svg class="hero-art reveal d4" viewBox="0 0 520 120" aria-hidden="true">
+          <circle class="sun" cx="260" cy="48" r="10" />
+          <path d="M20 88 C 120 88, 160 40, 260 40 S 400 88, 500 88" />
+          <path d="M40 96 C 140 96, 180 58, 260 58 S 380 96, 480 96" opacity="0.35" />
+        </svg>
+      </div>
+    </section>
+
+    <!-- 2. Problem -->
+    <section class="slide mesh-deep" data-theme="deep">
+      <div class="atmosphere">
+        <div class="horizon-glow"></div>
+        <div class="grain"></div>
+      </div>
+      <div class="slide-inner">
+        <p class="eyebrow reveal d1">The customer problem</p>
+        <h2 class="headline reveal d2">Banking explains the past. Customers also need help testing the next decision.</h2>
+        <div class="contrast-line">
+          <p class="now reveal d3">Most banking tools answer:<br /><span>“What happened to my money?”</span></p>
+          <p class="now reveal d4">Customers also need to know:<br /><span>“What happens to my goals if I make this decision?”</span></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. Product -->
+    <section class="slide mesh-light" data-theme="light">
+      <div class="atmosphere"><div class="grain"></div></div>
+      <div class="slide-inner">
+        <p class="eyebrow reveal d1">What we built</p>
+        <h2 class="headline reveal d2">Ask a financial “what-if” question and receive a quantified answer based on your real plan.</h2>
+        <div class="product-steps reveal d3">
+          <div class="product-step">
+            <strong>1. Understand the decision</strong>
+            <span>Bedrock extracts the amount, timing and intended goal from the question.</span>
+          </div>
+          <div class="product-arrow">→</div>
+          <div class="product-step">
+            <strong>2. Calculate the impact</strong>
+            <span>A deterministic Python engine projects cash flow, goal timing and financial risk.</span>
+          </div>
+          <div class="product-arrow">→</div>
+          <div class="product-step">
+            <strong>3. Explain the trade-off</strong>
+            <span>The customer sees what changes, what stays unchanged and why.</span>
+          </div>
+        </div>
+        <p class="insight reveal d4">Every displayed financial figure is calculated by the rules engine. The language model never invents financial amounts.</p>
+      </div>
+    </section>
+
+    <!-- 4. Real product -->
+    <section class="slide mesh-light" data-theme="light">
+      <div class="atmosphere"><div class="grain"></div></div>
+      <div class="slide-inner">
+        <p class="eyebrow reveal d1">Working interface</p>
+        <h2 class="headline reveal d2">A working interface connects the customer’s position, goals and questions.</h2>
+        <div class="screenshot-frame reveal d3">
+          <img src="../presentation-assets/dashboard-real.png" alt="Future You dashboard running with the synthetic Alex profile" />
+        </div>
+        <div class="screenshot-caption reveal d4">
+          <span>Customer financial position · Saved goals · Conversational what-if interface</span>
+          <span>Running prototype using a synthetic customer profile</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Advice and Manage -->
+    <section class="slide mesh-light" data-theme="light">
+      <div class="atmosphere"><div class="grain"></div></div>
+      <div class="slide-inner">
+        <p class="eyebrow reveal d1">Responsible agent design</p>
+        <h2 class="headline reveal d2">Safe actions by design.</h2>
+        <div class="mode-examples">
+          <div class="mode-example reveal d3">
+            <h3>Advice</h3>
+            <blockquote>Runs a scenario without changing the saved plan.</blockquote>
+            <p>The customer can explore a decision and its trade-offs without writing any data.</p>
+          </div>
+          <div class="mode-example manage reveal d4">
+            <h3>Manage</h3>
+            <blockquote>Previews the exact proposed change and requires explicit confirmation.</blockquote>
+            <p>Only a validated, confirmed proposal can update the customer’s saved plan.</p>
+          </div>
+          <div class="mode-example never reveal d5">
+            <h3>Never</h3>
+            <blockquote>Transfers money, makes payments or silently changes customer data.</blockquote>
+            <p>Financial execution remains outside the agent’s permitted actions.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Immediate simulation -->
+    <section class="slide mesh-light" data-theme="light">
+      <div class="atmosphere"><div class="grain"></div></div>
+      <div class="slide-inner">
+        <p class="eyebrow reveal d1">Immediate decision</p>
+        <h2 class="headline reveal d2">A $2,000 purchase leaves Alex with a thinner, measurable cash buffer.</h2>
+        <p class="scenario reveal d3">What happens if I buy a $2,000 laptop?</p>
+        <div class="compare reveal d4">
+          <div class="compare-col">
+            <div class="compare-label">Before</div>
+            <div class="metric-label">Available balance</div>
+            <div class="metric-value">$8,000</div>
+            <div class="metric-label">Monthly cash flow</div>
+            <div class="metric-value" style="font-size:1.2rem">$1,350</div>
+            <span class="risk-badge risk-low">Low risk</span>
+          </div>
+          <div class="compare-mid">→</div>
+          <div class="compare-col after">
+            <div class="compare-label">After purchase</div>
+            <div class="metric-label">Available balance</div>
+            <div class="metric-value">$6,000</div>
+            <div class="metric-label">Existing goal timelines</div>
+            <div class="metric-value" style="font-size:1.2rem">Unchanged</div>
+            <span class="risk-badge risk-med">Medium risk</span>
+          </div>
+        </div>
+        <p class="insight reveal d5">Liquid buffer after purchase: 1.6 months of recorded expenses. Medium risk applies when the remaining balance covers less than two months of expenses.</p>
+      </div>
+    </section>
+
+    <!-- 7. Business value -->
+    <section class="slide mesh-light" data-theme="light">
+      <div class="atmosphere"><div class="grain"></div></div>
+      <div class="slide-inner">
+        <p class="eyebrow reveal d1">Business value</p>
+        <h2 class="headline reveal d2">Future You turns digital banking from passive reporting into proactive support.</h2>
+        <div class="split">
+          <div class="split-block explain reveal d3">
+            <h3 class="teal">Customer value</h3>
+            <p>Greater confidence before major financial decisions.<br /><br />Clearer understanding of trade-offs.<br /><br />Better alignment between spending and personal goals.</p>
+          </div>
+          <div class="split-block calc reveal d4">
+            <h3 class="gold">BNZ value</h3>
+            <p>More meaningful digital engagement.<br /><br />Responsible, personalised financial wellbeing support.<br /><br />Help at the decision point—not after a problem appears.</p>
+          </div>
+        </div>
+        <p class="insight reveal d5">Future You helps BNZ support the decision before it becomes a financial problem.</p>
+      </div>
+    </section>
+
+    <!-- 8. Principle -->
+    <section class="slide mesh-light" data-theme="light">
+      <div class="atmosphere"><div class="grain"></div></div>
+      <div class="slide-inner">
+        <p class="eyebrow reveal d1">Calculation boundary</p>
+        <h2 class="headline reveal d2">AI understands and explains. Python calculates.</h2>
+        <div class="split">
+          <div class="split-block explain reveal d3">
+            <h3 class="teal">Amazon Bedrock</h3>
+            <p>Understands natural-language questions, extracts structured scenario inputs and explains calculated outcomes.</p>
+          </div>
+          <div class="split-block calc reveal d4">
+            <h3 class="gold">Deterministic financial engine</h3>
+            <p>Calculates cash flow and goal timing, applies transparent risk rules and produces traceable financial figures.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. Architecture -->
+    <section class="slide mesh-deep" data-theme="deep">
+      <div class="atmosphere">
+        <div class="horizon-glow"></div>
+        <div class="grain"></div>
+      </div>
+      <div class="slide-inner">
+        <p class="eyebrow reveal d1">AWS architecture and validation</p>
+        <h2 class="headline reveal d2">A working AWS-backed prototype.</h2>
+        <div class="arch-runtime reveal d3">
+          <div class="arch-box">
+            <strong>React frontend</strong>
+            <span>Local demonstration client</span>
+          </div>
+          <div class="arch-connector">HTTPS + JWT →</div>
+          <div class="arch-box">
+            <strong>API Gateway</strong>
+            <span>Public HTTP API</span>
+          </div>
+          <div class="arch-connector">→</div>
+          <div class="arch-box lambda">
+            <strong>FastAPI on Lambda</strong>
+            <span>Auth · agent orchestration · financial engine</span>
+          </div>
+          <div class="arch-connector">→</div>
+          <div class="arch-services">
+            <div class="arch-box"><strong>DynamoDB</strong><span>Profiles and plans</span></div>
+            <div class="arch-box"><strong>Amazon Bedrock</strong><span>Language tasks</span></div>
+            <div class="arch-box"><strong>CloudWatch</strong><span>Logs</span></div>
+            <div class="arch-box"><strong>IAM role</strong><span>Service permissions</span></div>
+          </div>
+        </div>
+        <div class="auth-strip reveal d4"><strong>Amazon Cognito</strong> issues the JWT; Lambda validates it before accessing DynamoDB. Backend and agent suites: <strong>145 automated tests passing.</strong></div>
+      </div>
+    </section>
+
+    <!-- 10. Close -->
+    <section class="slide mesh-deep" data-theme="deep">
+      <div class="atmosphere">
+        <div class="horizon-glow"></div>
+        <div class="horizon-line"></div>
+        <div class="grain"></div>
+      </div>
+      <div class="slide-inner center-text">
+        <p class="eyebrow reveal d1">Future You</p>
+        <h2 class="headline reveal d2" style="max-width:22ch;margin:0 auto">From financial hindsight to financial foresight.</h2>
+        <p class="lede reveal d3" style="max-width:42rem;margin:1rem auto 0">Understand the impact of a decision before committing to it—using transparent calculations, personalised goals and responsible AI.</p>
+        <ul class="proof-list reveal d4" style="max-width:46rem;margin-left:auto;margin-right:auto">
+          <li><span class="check">01</span><span>Cognito login, first-time onboarding and DynamoDB-backed customer profiles.</span></li>
+          <li><span class="check">02</span><span>Deterministic scenario calculations with Bedrock explanations.</span></li>
+          <li><span class="check">03</span><span>Live AWS backend with 145 automated tests passing.</span></li>
+        </ul>
+        <p class="tagline reveal d5 mx-auto" style="margin-top:1.1rem;max-width:46rem">Next step: pilot with consented customer data and measure decision confidence, goal adherence and digital engagement.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <script>
+    const slides = [...document.querySelectorAll(".slide")];
+    const dotsEl = document.getElementById("dots");
+    const progressFill = document.getElementById("progressFill");
+    const slideNum = document.getElementById("slideNum");
+    const slideTotal = document.getElementById("slideTotal");
+    const chromeBrand = document.getElementById("chromeBrand");
+    const deck = document.getElementById("deck");
+
+    const requestedSlide = Number(new URLSearchParams(window.location.search).get("slide"));
+    let index = Number.isInteger(requestedSlide) && requestedSlide >= 1 && requestedSlide <= slides.length
+      ? requestedSlide - 1
+      : 0;
+    let locked = false;
+
+    slides.forEach((slide, i) => slide.classList.toggle("active", i === index));
+
+    slideTotal.textContent = String(slides.length).padStart(2, "0");
+
+    slides.forEach((_, i) => {
+      const b = document.createElement("button");
+      b.className = "dot" + (i === 0 ? " on" : "");
+      b.setAttribute("aria-label", `Go to slide ${i + 1}`);
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        go(i);
+      });
+      dotsEl.appendChild(b);
+    });
+
+    function syncChrome() {
+      const theme = slides[index].dataset.theme;
+      const color = theme === "deep" ? "#F3F6F7" : "var(--ink)";
+      chromeBrand.style.color = color;
+      document.querySelector(".progress-wrap").style.color = color;
+      document.querySelector(".nav-hint").style.color = color;
+      slideNum.textContent = String(index + 1).padStart(2, "0");
+      progressFill.style.width = ((index + 1) / slides.length) * 100 + "%";
+      [...dotsEl.children].forEach((d, i) => d.classList.toggle("on", i === index));
+      // Theme dots for light/dark
+      dotsEl.dataset.theme = theme;
+    }
+
+    function go(next) {
+      if (locked) return;
+      next = Math.max(0, Math.min(slides.length - 1, next));
+      if (next === index) return;
+      locked = true;
+
+      const prev = slides[index];
+      const curr = slides[next];
+      prev.classList.remove("active");
+      prev.classList.add("exit");
+      curr.classList.add("active");
+      index = next;
+      syncChrome();
+
+      setTimeout(() => {
+        prev.classList.remove("exit");
+        locked = false;
+      }, 550);
+    }
+
+    function next() { go(index + 1); }
+    function prev() { go(index - 1); }
+
+    document.addEventListener("keydown", (e) => {
+      if (["ArrowRight", "ArrowDown", " ", "PageDown"].includes(e.key)) {
+        e.preventDefault();
+        next();
+      } else if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) {
+        e.preventDefault();
+        prev();
+      } else if (e.key === "Home") {
+        e.preventDefault();
+        go(0);
+      } else if (e.key === "End") {
+        e.preventDefault();
+        go(slides.length - 1);
+      }
+    });
+
+    let touchX = null;
+    deck.addEventListener("touchstart", (e) => {
+      touchX = e.changedTouches[0].screenX;
+    }, { passive: true });
+    deck.addEventListener("touchend", (e) => {
+      if (touchX == null) return;
+      const dx = e.changedTouches[0].screenX - touchX;
+      if (Math.abs(dx) > 50) dx < 0 ? next() : prev();
+      touchX = null;
+    }, { passive: true });
+
+    deck.addEventListener("click", (e) => {
+      if (e.target.closest(".dot") || e.target.closest("a") || e.target.closest("button")) return;
+      const mid = window.innerWidth / 2;
+      e.clientX >= mid ? next() : prev();
+    });
+
+    syncChrome();
+  </script>
+</body>
+</html>

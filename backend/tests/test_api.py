@@ -359,6 +359,28 @@ def test_confirmed_agent_proposal_updates_profile_and_recalculates_savings(
     assert len(body["goals"]) == len(alex.goals)
 
 
+def test_confirmed_agent_proposal_persists_in_mock_mode(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("FUTURE_YOU_MOCK_STATE_DIR", str(tmp_path))
+    proposal = client.post(
+        "/agent/manage",
+        json={
+            "message": "Create a bicycle goal for $2,000 with $100 monthly",
+            "history": [],
+        },
+    )
+    assert proposal.status_code == 200
+
+    response = client.post(
+        "/agent/proposals/apply",
+        json={"proposalToken": proposal.json()["proposalToken"]},
+    )
+
+    assert response.status_code == 200
+    assert any(goal["name"] == "Bicycle" for goal in response.json()["goals"])
+    saved_profile = (tmp_path / "alex.json").read_text(encoding="utf-8")
+    assert '"name": "Bicycle"' in saved_profile
+
+
 def test_apply_endpoint_rejects_client_supplied_operations(monkeypatch, alex) -> None:
     monkeypatch.setattr("app.main.get_customer", lambda customer_id: alex.model_copy(deep=True))
 

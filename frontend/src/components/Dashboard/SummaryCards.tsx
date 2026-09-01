@@ -47,7 +47,7 @@ export function SummaryCards({ profile }: { profile: CustomerProfile }) {
       </Grid>
       <Grid item xs={12} sm={6} md={3}>
         <StatCard
-          label="Monthly Savings"
+          label="Monthly Cash Flow"
           value={formatCurrency(profile.monthlySavings)}
           accent={colors.futureTeal}
         />

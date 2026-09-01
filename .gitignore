@@ -15,6 +15,7 @@ backend/__pycache__/
 **/__pycache__/
 backend/.pytest_cache/
 backend/.ruff_cache/
+backend/.local/
 .coverage
 *.egg-info/
 *.pyc

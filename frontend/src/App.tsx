@@ -26,6 +26,7 @@ export default function App() {
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const [profileRequest, setProfileRequest] = useState(0);
   const currentUserId = auth.user?.userId ?? null;
+  const profileEditingEnabled = Boolean(import.meta.env.VITE_API_URL);
 
   useEffect(() => {
     if (auth.enabled && !auth.user) return;
@@ -130,13 +131,13 @@ export default function App() {
             {profile ? (
               <DashboardSection
                 profile={profile}
-                onAddGoal={auth.enabled ? async (goal) => {
+                onAddGoal={profileEditingEnabled ? async (goal) => {
                   setProfile(await addCurrentUserGoal(goal));
                 } : undefined}
-                onDeleteGoal={auth.enabled ? async (goalId) => {
+                onDeleteGoal={profileEditingEnabled ? async (goalId) => {
                   setProfile(await deleteCurrentUserGoal(goalId));
                 } : undefined}
-                onSaveSpending={auth.enabled ? async (categories) => {
+                onSaveSpending={profileEditingEnabled ? async (categories) => {
                   setProfile(await saveSpendingCategories(categories));
                 } : undefined}
               />

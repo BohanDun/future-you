@@ -57,6 +57,7 @@ export COGNITO_APP_CLIENT_ID='your-app-client-id'
 export AWS_PROFILE=future-you
 export AWS_REGION_NAME=ap-southeast-2
 export AI_MODE=bedrock
+export BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
 export AGENT_PROPOSAL_SIGNING_KEY='a-private-random-value-of-at-least-32-characters'
 export PYTHONPATH='../:.'
 ```
@@ -103,7 +104,8 @@ validated token and does not trust a browser-supplied customer ID.
 
 ## 6. Verify the flow
 
-1. Start the backend with Cognito and DynamoDB modes enabled.
+1. From the repository root, run `./start-aws.sh`. It will list any missing
+   configuration instead of starting a partial AWS setup.
 2. Start the frontend and create a new account.
 3. Enter the email verification code.
 4. Sign in and complete financial onboarding.
@@ -117,3 +119,15 @@ Manage mode signs every preview so the browser cannot alter an operation before 
 confirmed. Set `AGENT_PROPOSAL_SIGNING_KEY` to a private random value of at least 32
 characters in the backend environment. Use the same value for every Lambda instance and
 do not expose it through a `VITE_` variable or commit it to Git.
+
+## 8. Return to the AWS-free Mock version
+
+Stop the AWS processes and run this from the repository root:
+
+```bash
+./start-dev.sh
+```
+
+The Mock launcher explicitly selects Mock authentication, local JSON profile storage,
+and deterministic AI responses. It does not call Cognito, DynamoDB, or Bedrock. Mock
+changes persist in `backend/.local/mock-customers/` and remain separate from AWS data.

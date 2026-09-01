@@ -38,7 +38,10 @@ def _issuer() -> str:
     if not COGNITO_USER_POOL_ID or not COGNITO_APP_CLIENT_ID:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Cognito authentication is not configured",
+            detail=(
+                "AWS sign-in is not configured. Set COGNITO_USER_POOL_ID and "
+                "COGNITO_APP_CLIENT_ID; see docs/AWS_AUTH_SETUP.md."
+            ),
         )
     return f"https://cognito-idp.{AWS_REGION}.amazonaws.com/{COGNITO_USER_POOL_ID}"
 

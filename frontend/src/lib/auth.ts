@@ -14,7 +14,9 @@ const userPoolId = import.meta.env.VITE_COGNITO_USER_POOL_ID;
 const userPoolClientId = import.meta.env.VITE_COGNITO_USER_POOL_CLIENT_ID;
 
 export const authConfigurationError = authEnabled && (!userPoolId || !userPoolClientId)
-  ? 'Cognito authentication is enabled but the user pool configuration is missing.'
+  ? 'AWS sign-in is not configured. Set VITE_COGNITO_USER_POOL_ID and '
+    + 'VITE_COGNITO_USER_POOL_CLIENT_ID, then restart the frontend. '
+    + 'See docs/AWS_AUTH_SETUP.md.'
   : null;
 
 if (authEnabled && userPoolId && userPoolClientId) {

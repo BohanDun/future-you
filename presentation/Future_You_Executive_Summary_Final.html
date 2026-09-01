@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Future You — Executive Summary</title>
+  <style>
+    @page { size: A4; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; width: 210mm; height: 297mm; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      color: #172033;
+      background: #fff;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .page { width: 210mm; height: 297mm; padding: 20mm 19mm 18mm; }
+    h1 { margin: 0; color: #0b2a4e; font-size: 31pt; line-height: 1; }
+    .tagline { margin: 3.5mm 0 5mm; color: #1e6b67; font-size: 12.5pt; line-height: 1.35; font-weight: 700; }
+    .rule { height: 1.2px; background: #0b2a4e; margin-bottom: 7mm; }
+    section { margin-bottom: 6.5mm; }
+    h2 { margin: 0 0 2mm; color: #0b2a4e; font-size: 12.5pt; }
+    p { margin: 0; font-size: 10.2pt; line-height: 1.5; color: #364052; }
+    .solution { font-size: 10.6pt; color: #172033; }
+    .capabilities { margin: 4mm 0 6.5mm; border-top: 1px solid #d8dee5; }
+    .capability {
+      display: grid;
+      grid-template-columns: 42mm 1fr;
+      gap: 4mm;
+      padding: 3.8mm 0;
+      border-bottom: 1px solid #d8dee5;
+    }
+    .capability strong { color: #0b2a4e; font-size: 10.2pt; }
+    .capability span { color: #465166; font-size: 9.6pt; line-height: 1.42; }
+    .flow {
+      margin-top: 2.5mm;
+      padding: 4.5mm 4mm;
+      background: #eef5f4;
+      border-left: 3px solid #1e6b67;
+      font-size: 9.6pt;
+      line-height: 1.5;
+      color: #273348;
+    }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+    .panel { padding: 5mm; min-height: 51mm; background: #f4f6f8; border-top: 2px solid #1e6b67; }
+    .panel.gold { border-top-color: #c8963b; }
+    .panel h3 { margin: 0 0 2.5mm; font-size: 11pt; color: #0b2a4e; }
+    ul { margin: 0; padding-left: 4.5mm; }
+    li { margin: 0 0 2.4mm; color: #465166; font-size: 9.6pt; line-height: 1.42; }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <h1>Future You</h1>
+    <div class="tagline">A conversational financial simulator — helping customers explore what could happen next.</div>
+    <div class="rule"></div>
+
+    <section>
+      <h2>The problem</h2>
+      <p>Banking tools show customers what happened to their money, but not how today’s decision could affect tomorrow’s cash flow, financial buffer and personal goals. Customers are left guessing before purchases, savings changes or rising recurring costs.</p>
+    </section>
+
+    <section>
+      <h2>The solution</h2>
+      <p class="solution">Future You turns a plain-English “what-if” question into a quantified, before-and-after simulation grounded in the customer’s saved plan. AI understands and explains; deterministic Python code calculates every displayed financial figure.</p>
+    </section>
+
+    <div class="capabilities">
+      <div class="capability"><strong>Financial dashboard</strong><span>Shows balance, monthly income, monthly expenses, monthly cash flow, spending categories and savings goals.</span></div>
+      <div class="capability"><strong>Advice mode</strong><span>Runs read-only scenarios and explains the trade-off without changing the saved customer plan.</span></div>
+      <div class="capability"><strong>Manage mode</strong><span>Previews an exact proposed change and requires explicit confirmation before validated data is saved.</span></div>
+    </div>
+
+    <section>
+      <h2>How it works</h2>
+      <div class="flow"><strong>React frontend</strong> → Amazon Cognito sign-in and JWT → Amazon API Gateway → FastAPI on AWS Lambda → Amazon DynamoDB customer profile → Amazon Bedrock interprets and explains → deterministic financial engine calculates cash flow, goal timing and risk.</div>
+    </section>
+
+    <section class="two-col">
+      <div class="panel">
+        <h3>Customer value</h3>
+        <ul>
+          <li>Greater confidence before major financial decisions</li>
+          <li>Clearer understanding of financial trade-offs</li>
+          <li>Better alignment between spending and personal goals</li>
+        </ul>
+      </div>
+      <div class="panel gold">
+        <h3>Value for BNZ</h3>
+        <ul>
+          <li>Moves digital banking from passive reporting to proactive support</li>
+          <li>Creates more meaningful customer engagement</li>
+          <li>Supports financial wellbeing through responsible guidance</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+</body>
+</html>

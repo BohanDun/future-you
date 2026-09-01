@@ -102,6 +102,10 @@ and calculation flow.
 | Local with AWS | Cognito | DynamoDB | Bedrock |
 | Cloud deployment | Cognito | DynamoDB | Bedrock |
 
+Use the modes as complete profiles. `mock/mock/mock` is the AWS-free demo;
+`cognito/dynamodb/bedrock` is the AWS profile. Mixing adapters is supported for
+development diagnostics but is not a normal application mode.
+
 ### Backend Setup
 
 From the repository root:
@@ -123,6 +127,22 @@ On Windows PowerShell, activate the environment with:
 ### Mock Mode
 
 Mock mode requires no AWS account or API key:
+
+To start both the backend and frontend from the repository root:
+
+```bash
+./start-dev.sh
+```
+
+This mode supports the complete product flow, including profile edits, goal changes,
+spending updates, Advice mode, Manage previews, and applying confirmed proposals.
+Updated profiles are stored under `backend/.local/mock-customers/` so they survive a
+restart without modifying the checked-in demo fixtures. Delete that directory when
+you intentionally want to reset the local demo data.
+
+Press `Ctrl+C` to stop both services. Alternatively, start each service separately
+using the commands below. The script overrides Cognito/AWS mode settings and starts
+both services in the complete local Mock profile.
 
 ```bash
 cd backend
@@ -157,25 +177,17 @@ Open <http://127.0.0.1:5173>.
 
 ### AWS Mode
 
-Configure Cognito and DynamoDB by following
-[`docs/AWS_AUTH_SETUP.md`](docs/AWS_AUTH_SETUP.md), then start the backend with:
+Configure Cognito, DynamoDB, Bedrock, and backend credentials by following
+[`docs/AWS_AUTH_SETUP.md`](docs/AWS_AUTH_SETUP.md). Export the documented backend and
+frontend variables, then use the validated AWS launcher:
 
 ```bash
-cd backend
-source .venv/bin/activate
-export PYTHONPATH="../:."
-export AUTH_MODE=cognito
-export DATA_SOURCE=dynamodb
-export AI_MODE=bedrock
-export AWS_REGION_NAME=ap-southeast-2
-export AWS_PROFILE=future-you
-export COGNITO_USER_POOL_ID=your-user-pool-id
-export COGNITO_APP_CLIENT_ID=your-app-client-id
-export CUSTOMER_TABLE_NAME=future-you-users
-export BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
-export AGENT_PROPOSAL_SIGNING_KEY=replace-with-a-long-random-secret
-uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+./start-aws.sh
 ```
+
+The launcher refuses to start a partially configured AWS profile. It lists every
+missing variable and points back to the setup guide. `start-dev.sh` remains the
+AWS-free Mock launcher.
 
 The Bedrock client uses boto3's standard credential chain. An AWS SSO/profile session,
 Lambda execution role, or `AWS_BEARER_TOKEN_BEDROCK` can provide credentials. Never
@@ -216,6 +228,7 @@ python -m agent.scripts.test_bedrock
 | `CUSTOMER_TABLE_NAME` | DynamoDB profile table | `future-you-users` |
 | `BEDROCK_MODEL_ID` | Bedrock model used by the agent | `amazon.nova-lite-v1:0` |
 | `AGENT_PROPOSAL_SIGNING_KEY` | Signs Manage-mode proposals | Long random secret |
+| `FUTURE_YOU_MOCK_STATE_DIR` | Optional local Mock profile storage | `backend/.local/mock-customers` |
 | `FUTURE_YOU_DATA_DIR` | Optional local demo-data override | Directory path |
 
 ### Frontend

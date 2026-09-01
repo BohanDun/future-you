@@ -45,7 +45,7 @@ export function Header({ userName, onLogout }: HeaderProps) {
               variant="body2"
               sx={{ color: colors.inkSoft, display: { xs: 'none', sm: 'block' } }}
             >
-              Most banks tell you what happened. Future You shows you what will happen.
+              Most banks show you what happened. Future You helps you explore what could happen next.
             </Typography>
           )}
         </Stack>
