@@ -111,11 +111,10 @@ development diagnostics but is not a normal application mode.
 From the repository root:
 
 ```bash
-cd backend
 python -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-export PYTHONPATH="../:."
+pip install -r backend/requirements.txt
+export PYTHONPATH=".:backend"
 ```
 
 On Windows PowerShell, activate the environment with:
@@ -145,12 +144,12 @@ using the commands below. The script overrides Cognito/AWS mode settings and sta
 both services in the complete local Mock profile.
 
 ```bash
-cd backend
 source .venv/bin/activate
-export PYTHONPATH="../:."
+export PYTHONPATH=".:backend"
 export AUTH_MODE=mock
 export DATA_SOURCE=mock
 export AI_MODE=mock
+cd backend
 uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
 
@@ -205,9 +204,8 @@ VITE_COGNITO_USER_POOL_CLIENT_ID=your-app-client-id
 To verify Bedrock connectivity:
 
 ```bash
-cd backend
 source .venv/bin/activate
-export PYTHONPATH="../:."
+export PYTHONPATH=".:backend"
 export AWS_PROFILE=future-you
 python -m agent.scripts.test_bedrock
 ```
@@ -287,8 +285,8 @@ npm run build
 Run backend and agent checks:
 
 ```bash
-cd backend
 source .venv/bin/activate
+cd backend
 python -m ruff check . ../agent
 python -m pytest
 ```

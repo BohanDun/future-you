@@ -6,8 +6,8 @@ PROJECT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$PROJECT_DIR/backend"
 FRONTEND_DIR="$PROJECT_DIR/frontend"
 
-if [[ ! -x "$BACKEND_DIR/.venv/bin/uvicorn" ]]; then
-  echo "Error: backend/.venv/bin/uvicorn was not found. Install the backend dependencies as described in the README." >&2
+if [[ ! -x "$PROJECT_DIR/.venv/bin/uvicorn" ]]; then
+  echo "Error: .venv/bin/uvicorn was not found. Install the backend dependencies as described in the README." >&2
   exit 1
 fi
 
@@ -75,7 +75,7 @@ trap cleanup INT TERM EXIT
 echo "Starting backend: http://127.0.0.1:8000"
 (
   cd "$BACKEND_DIR" || exit 1
-  exec .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+  exec "$PROJECT_DIR/.venv/bin/uvicorn" app.main:app --host 127.0.0.1 --port 8000 --reload
 ) &
 backend_pid=$!
 

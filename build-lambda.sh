@@ -12,7 +12,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-"$BACKEND_DIR/.venv/bin/python" -m pip install \
+"$PROJECT_DIR/.venv/bin/python" -m pip install \
   --requirement "$BACKEND_DIR/requirements-lambda.txt" \
   --platform manylinux2014_x86_64 \
   --implementation cp \

@@ -10,7 +10,6 @@ dist/
 
 # Python
 .venv/
-backend/.venv/
 backend/__pycache__/
 **/__pycache__/
 backend/.pytest_cache/
